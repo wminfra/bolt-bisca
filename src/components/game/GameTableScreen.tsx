@@ -48,54 +48,61 @@ export default function GameTableScreen() {
           <OpponentHand key={opp.player.id} position={opp.position} player={opp.player} isTurn={opp.player.id === game.turn_player_id} />
         ))}
 
-        {/* Center: table cards + trump */}
-        <div className="flex flex-col items-center gap-4">
-          {/* Trump & Stock */}
-          <div className="relative flex items-center justify-center mb-4">
-            {/* Trump card rotated 90° behind the stock */}
-            {game.trump_available && game.trump_card && (
-              <div className="absolute z-0" style={{ transform: "rotate(90deg)", left: "-8px" }}>
-                <Card card={game.trump_card} size="sm" />
-              </div>
-            )}
-            {/* Stock pile on top */}
-            {game.stock_count > 0 && (
-              <div className="relative z-10">
-                <CardBack size="sm" count={game.stock_count} />
-              </div>
-            )}
+        {/* Center play area: trump/stock on left, table cards on right */}
+        <div className="flex items-center gap-8">
+          {/* Trump & Stock column */}
+          <div className="relative flex flex-col items-center gap-1" style={{ width: 80 }}>
+            <div className="relative" style={{ width: 56, height: 80 }}>
+              {/* Trump card rotated 90° behind — showing ~75% */}
+              {game.trump_available && game.trump_card && (
+                <div className="absolute" style={{ transform: "rotate(90deg)", top: 10, left: -18, zIndex: 1 }}>
+                  <Card card={game.trump_card} size="sm" />
+                </div>
+              )}
+              {/* Stock pile on top */}
+              {game.stock_count > 0 && (
+                <div className="absolute top-0 left-0" style={{ zIndex: 2 }}>
+                  <CardBack size="sm" count={game.stock_count} />
+                </div>
+              )}
+            </div>
             {/* Trump label */}
-            <span className="ml-3 text-xs text-primary font-display font-semibold uppercase z-10">
+            <span className="text-xs text-primary font-display font-semibold uppercase mt-1">
               Trunfo{!game.trump_available && `: ${game.trump_suit}`}
             </span>
           </div>
 
           {/* Table cards */}
           <div className="flex gap-6 items-end min-h-[8rem]">
-            {game.table_cards.map((tc, idx) => (
-              <div key={tc.player_id} className="flex flex-col items-center gap-1" style={{ zIndex: idx + 1 }}>
-                <Card
-                  card={tc.card}
-                  size="md"
-                  isWinner={winningCardId === tc.card.id}
-                />
-                <span className="text-[10px] text-muted-foreground">{tc.nickname}</span>
-              </div>
-            ))}
+            {game.table_cards.map((tc, idx) => {
+              const isWinner = resolving && game.last_trick
+                ? game.last_trick.winning_card.id === tc.card.id
+                : false;
+              return (
+                <div key={tc.player_id} className="flex flex-col items-center gap-1" style={{ zIndex: idx + 1 }}>
+                  <Card
+                    card={tc.card}
+                    size="md"
+                    isWinner={isWinner}
+                  />
+                  <span className="text-[10px] text-muted-foreground">{tc.nickname}</span>
+                </div>
+              );
+            })}
             {game.table_cards.length === 0 && (
               <div className="w-20 h-28 border-2 border-dashed border-border/30 rounded-lg flex items-center justify-center text-muted-foreground text-xs">
                 Mesa vazia
               </div>
             )}
           </div>
-
-          {/* Last trick info */}
-          {game.last_trick && !resolving && (
-            <p className="text-xs text-muted-foreground">
-              Última vaza: <span className="text-foreground">{game.last_trick.winner_nickname}</span> ganhou
-            </p>
-          )}
         </div>
+
+        {/* Last trick info */}
+        {game.last_trick && !resolving && (
+          <p className="absolute bottom-2 text-xs text-muted-foreground">
+            Última vaza: <span className="text-foreground">{game.last_trick.winner_nickname}</span> ganhou
+          </p>
+        )}
       </div>
 
       {/* Player hand at bottom */}
