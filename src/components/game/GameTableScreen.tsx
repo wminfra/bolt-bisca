@@ -51,19 +51,23 @@ export default function GameTableScreen() {
         {/* Center: table cards + trump */}
         <div className="flex flex-col items-center gap-4">
           {/* Trump & Stock */}
-          <div className="flex items-center gap-3 mb-2">
-            {game.stock_count > 0 && <CardBack size="sm" count={game.stock_count} />}
+          <div className="relative flex items-center justify-center mb-4">
+            {/* Trump card rotated 90° behind the stock */}
             {game.trump_available && game.trump_card && (
-              <div className="relative">
+              <div className="absolute z-0" style={{ transform: "rotate(90deg)", left: "-8px" }}>
                 <Card card={game.trump_card} size="sm" />
-                <span className="absolute -bottom-4 left-0 right-0 text-center text-[10px] text-primary font-semibold uppercase">
-                  Trunfo
-                </span>
               </div>
             )}
-            {!game.trump_available && (
-              <span className="text-xs text-primary font-display">Trunfo: {game.trump_suit}</span>
+            {/* Stock pile on top */}
+            {game.stock_count > 0 && (
+              <div className="relative z-10">
+                <CardBack size="sm" count={game.stock_count} />
+              </div>
             )}
+            {/* Trump label */}
+            <span className="ml-3 text-xs text-primary font-display font-semibold uppercase z-10">
+              Trunfo{!game.trump_available && `: ${game.trump_suit}`}
+            </span>
           </div>
 
           {/* Table cards */}
