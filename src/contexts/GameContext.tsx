@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from "react";
+import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
 import type { SessionSnapshot, WsServerMessage } from "@/lib/types";
 import { setToken, clearToken } from "@/lib/api";
 import { connectWs, disconnectWs, onWsMessage } from "@/lib/websocket";
