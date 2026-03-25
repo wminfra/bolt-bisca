@@ -71,9 +71,9 @@ export default function GameTableScreen() {
           </div>
 
           {/* Table cards */}
-          <div className="flex gap-3 items-end min-h-[7rem]">
-            {game.table_cards.map((tc) => (
-              <div key={tc.player_id} className="flex flex-col items-center gap-1">
+          <div className="flex gap-6 items-end min-h-[8rem]">
+            {game.table_cards.map((tc, idx) => (
+              <div key={tc.player_id} className="flex flex-col items-center gap-1" style={{ zIndex: idx + 1 }}>
                 <Card
                   card={tc.card}
                   size="md"
