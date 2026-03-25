@@ -6,10 +6,12 @@ import type { RoomPlayerSnapshot, GameSnapshot, CardSnapshot } from "@/lib/types
 import GameResultOverlay from "@/components/game/GameResultOverlay";
 
 export default function GameTableScreen() {
-  const { session, resolving } = useGame();
+  const { session } = useGame();
   const room = session?.room;
   const game = room?.game;
   if (!room || !game) return null;
+
+  const resolving = game.resolving === true;
 
   const playCard = (cardId: string) => {
     if (!game.you_can_play || resolving) return;
@@ -20,8 +22,6 @@ export default function GameTableScreen() {
   const { seating_order, viewer_seat } = game;
   const totalPlayers = seating_order.length;
   const opponents = getOpponentPositions(room.players, seating_order, viewer_seat, totalPlayers);
-
-  const winningCardId = resolving && game.last_trick ? game.last_trick.winning_card.id : null;
 
   return (
     <div className="screen min-h-screen felt-bg flex flex-col relative overflow-hidden">
