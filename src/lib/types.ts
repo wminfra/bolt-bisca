@@ -1,0 +1,175 @@
+// Types derived from openapi.yaml
+
+export type Suit = "oros" | "copas" | "espadas" | "bastos";
+export type RoomMode = "1v1" | "2v2";
+export type RoomStatus = "waiting" | "playing" | "finished";
+
+export interface AuthPayload {
+  nickname: string;
+  password: string;
+}
+
+export interface CreateRoomPayload {
+  mode: RoomMode;
+  hand_size: 3 | 6;
+  is_private?: boolean;
+}
+
+export interface JoinRoomPayload {
+  room_id: string;
+}
+
+export interface SelectPartnerPayload {
+  partner_user_id: string;
+}
+
+export interface CardSnapshot {
+  id: string;
+  suit: Suit;
+  suit_label: string;
+  rank: number;
+  rank_label: string;
+  points: number;
+}
+
+export interface TableCardSnapshot {
+  player_id: string;
+  nickname: string;
+  card: CardSnapshot;
+}
+
+export interface LastTrickSnapshot {
+  winner_user_id: string;
+  winner_nickname: string;
+  winning_card: CardSnapshot;
+  cards: CardSnapshot[];
+  resolved_at: string;
+}
+
+export interface TeamScore {
+  team_id: number;
+  label: string;
+  members: string[];
+  points: number;
+}
+
+export interface MatchResult {
+  scoreboard: TeamScore[];
+  winner_team_id: number | null;
+  winner_label: string;
+  is_tie: boolean;
+  target: number;
+  total_points: number;
+}
+
+export interface GameSnapshot {
+  you_can_play: boolean;
+  your_hand: CardSnapshot[];
+  table_cards: TableCardSnapshot[];
+  turn_player_id: string;
+  turn_nickname: string;
+  seating_order: string[];
+  viewer_seat: number;
+  stock_count: number;
+  trump_suit: string;
+  trump_card: CardSnapshot;
+  trump_available: boolean;
+  resolving: boolean;
+  trick_number: number;
+  last_trick: LastTrickSnapshot | null;
+  result: MatchResult | null;
+}
+
+export interface RoomPlayerSnapshot {
+  id: string;
+  nickname: string;
+  is_creator: boolean;
+  is_you: boolean;
+  team_id: number | null;
+  seat_index: number | null;
+  connected: boolean;
+  hand_count: number;
+  captured_count: number;
+}
+
+export interface RoomSnapshot {
+  id: string;
+  is_private: boolean;
+  mode: RoomMode;
+  hand_size: 3 | 6;
+  status: RoomStatus;
+  creator_id: string;
+  creator_nickname: string;
+  capacity: number;
+  players: RoomPlayerSnapshot[];
+  partner_user_id: string | null;
+  viewer_is_creator: boolean;
+  can_start: boolean;
+  you_can_start: boolean;
+  start_reason: string | null;
+  can_choose_partner: boolean;
+  game: GameSnapshot | null;
+}
+
+export interface SessionUser {
+  id: string;
+  nickname: string;
+}
+
+export interface PublicRoom {
+  id: string;
+  mode: string;
+  hand_size: number;
+  players: number;
+  capacity: number;
+  creator_nickname: string;
+  player_nicknames: string[];
+}
+
+export interface SessionSnapshot {
+  user: SessionUser;
+  public_rooms: PublicRoom[];
+  room: RoomSnapshot | null;
+}
+
+export interface AuthResponse {
+  token: string;
+  session: SessionSnapshot;
+}
+
+export interface ErrorResponse {
+  detail: string;
+}
+
+export interface RoomActionResponse {
+  room_id: string;
+  session: SessionSnapshot;
+}
+
+export interface SessionResponse {
+  session: SessionSnapshot;
+}
+
+// WebSocket messages
+export interface WsPlayCardMessage {
+  type: "play_card";
+  payload: { card_id: string };
+}
+
+export interface WsRefreshMessage {
+  type: "refresh";
+}
+
+export type WsClientMessage = WsPlayCardMessage | WsRefreshMessage;
+
+export interface WsSessionStateMessage {
+  type: "session_state";
+  payload: SessionSnapshot;
+}
+
+export interface WsErrorMessage {
+  type: "error";
+  message: string;
+}
+
+export type WsServerMessage = WsSessionStateMessage | WsErrorMessage;
