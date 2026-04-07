@@ -18,110 +18,126 @@ export default function GameTableScreen() {
     sendWs({ type: "play_card", payload: { card_id: cardId } });
   };
 
-  // Position opponents around the table based on seating
   const { seating_order, viewer_seat } = game;
   const totalPlayers = seating_order.length;
-  const opponents = getOpponentPositions(room.players, seating_order, viewer_seat, totalPlayers);
+  const opponents = getOpponentSlots(room.players, seating_order, viewer_seat, totalPlayers);
+
+  // Split opponents: top = across, sides = left/right (4p only)
+  const topOpp = opponents.find((o) => o.slot === "top");
+  const leftOpp = opponents.find((o) => o.slot === "left");
+  const rightOpp = opponents.find((o) => o.slot === "right");
 
   return (
-    <div className="screen min-h-screen felt-bg flex flex-col relative overflow-hidden">
-      {/* Ad placeholder top */}
-      <div id="ad-top-banner">{/* Google AdSense */}</div>
-
-      {/* Game info bar */}
-      <div className="flex items-center justify-between px-4 py-2 bg-card/80 border-b border-border">
-        <div className="text-sm">
+    <div className="screen fixed inset-0 felt-bg flex flex-col overflow-hidden">
+      {/* Top bar */}
+      <div className="flex-none flex items-center justify-between px-3 py-1.5 bg-card/80 border-b border-border text-[11px]">
+        <div>
           <span className="text-muted-foreground">Sala </span>
           <span className="font-mono text-primary">{room.id}</span>
-          <span className="text-muted-foreground ml-3">Vaza #{game.trick_number}</span>
+          <span className="text-muted-foreground ml-2">Vaza #{game.trick_number}</span>
         </div>
-        <div className="text-sm text-muted-foreground">
-          Vez de: <span className="text-foreground font-medium">{game.turn_nickname}</span>
+        <div className="text-muted-foreground">
+          Vez: <span className="text-foreground font-medium">{game.turn_nickname}</span>
         </div>
+      </div>
+
+      {/* Score bar */}
+      <div className="flex-none">
         <ScoreBoard game={game} players={room.players} />
       </div>
 
-      {/* Table area */}
-      <div className="flex-1 flex items-center justify-center relative">
-        {/* Opponents */}
-        {opponents.map((opp) => (
-          <OpponentHand key={opp.player.id} position={opp.position} player={opp.player} isTurn={opp.player.id === game.turn_player_id} />
-        ))}
-
-        {/* Center play area: trump/stock on left, table cards on right */}
-        <div className="flex items-center gap-8">
-          {/* Trump & Stock column */}
-          <div className="relative flex flex-col items-center gap-1" style={{ width: 80 }}>
-            <div className="relative" style={{ width: 56, height: 80 }}>
-              {/* Trump card rotated 90° behind — showing ~75% */}
-              {game.trump_available && game.trump_card && (
-                <div className="absolute" style={{ transform: "rotate(90deg)", top: 10, left: -18, zIndex: 1 }}>
-                  <Card card={game.trump_card} size="sm" />
-                </div>
-              )}
-              {/* Stock pile on top */}
-              {game.stock_count > 0 && (
-                <div className="absolute top-0 left-0" style={{ zIndex: 2 }}>
-                  <CardBack size="sm" count={game.stock_count} />
-                </div>
-              )}
+      {/* Main game area — vertical stack */}
+      <div className="flex-1 flex flex-col min-h-0">
+        {/* Top opponent */}
+        {topOpp && (
+          <div className="flex-none flex flex-col items-center py-1">
+            <OpponentLabel player={topOpp.player} isTurn={topOpp.player.id === game.turn_player_id} />
+            <div className="flex gap-0.5 mt-0.5">
+              {Array.from({ length: topOpp.player.hand_count }).map((_, i) => (
+                <CardBack key={i} size="xs" />
+              ))}
             </div>
-            {/* Trump label */}
-            <span className="text-xs text-primary font-display font-semibold uppercase mt-1">
-              Trunfo{!game.trump_available && `: ${game.trump_suit}`}
-            </span>
           </div>
+        )}
 
-          {/* Table cards */}
-          <div className="flex gap-6 items-end min-h-[8rem]">
-            {game.table_cards.map((tc, idx) => {
-              const isWinner = resolving && game.last_trick
-                ? game.last_trick.winning_card.id === tc.card.id
-                : false;
-              return (
-                <div key={tc.player_id} className="flex flex-col items-center gap-1" style={{ zIndex: idx + 1 }}>
-                  <Card
-                    card={tc.card}
-                    size="md"
-                    isWinner={isWinner}
-                  />
-                  <span className="text-[10px] text-muted-foreground">{tc.nickname}</span>
-                </div>
-              );
-            })}
-            {game.table_cards.length === 0 && (
-              <div className="w-20 h-28 border-2 border-dashed border-border/30 rounded-lg flex items-center justify-center text-muted-foreground text-xs">
-                Mesa vazia
+        {/* Middle section: sides + center */}
+        <div className="flex-1 flex min-h-0">
+          {/* Left opponent */}
+          {leftOpp ? (
+            <div className="flex-none w-12 flex flex-col items-center justify-center gap-0.5 px-0.5">
+              <OpponentLabel player={leftOpp.player} isTurn={leftOpp.player.id === game.turn_player_id} vertical />
+              <div className="flex flex-col gap-0.5">
+                {Array.from({ length: leftOpp.player.hand_count }).map((_, i) => (
+                  <CardBack key={i} size="xs" />
+                ))}
               </div>
+            </div>
+          ) : <div className="w-0" />}
+
+          {/* Center: trump/stock + table cards */}
+          <div className="flex-1 flex flex-col items-center justify-center min-h-0 gap-2">
+            {/* Trump + Stock row */}
+            <div className="flex items-center gap-3">
+              <TrumpStock game={game} />
+              {/* Table cards */}
+              <div className="flex gap-2 items-end min-h-[5rem]">
+                {game.table_cards.map((tc, idx) => {
+                  const isWinner = resolving && game.last_trick
+                    ? game.last_trick.winning_card.id === tc.card.id
+                    : false;
+                  return (
+                    <div key={tc.player_id} className="flex flex-col items-center gap-0.5" style={{ zIndex: idx + 1 }}>
+                      <Card card={tc.card} size="sm" isWinner={isWinner} />
+                      <span className="text-[9px] text-muted-foreground leading-none">{tc.nickname}</span>
+                    </div>
+                  );
+                })}
+                {game.table_cards.length === 0 && (
+                  <div className="w-14 h-20 border border-dashed border-border/30 rounded-lg flex items-center justify-center text-muted-foreground text-[9px]">
+                    Mesa vazia
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Last trick info */}
+            {game.last_trick && !resolving && (
+              <p className="text-[10px] text-muted-foreground">
+                Última vaza: <span className="text-foreground">{game.last_trick.winner_nickname}</span> ganhou
+              </p>
             )}
           </div>
-        </div>
 
-        {/* Last trick info */}
-        {game.last_trick && !resolving && (
-          <p className="absolute bottom-2 text-xs text-muted-foreground">
-            Última vaza: <span className="text-foreground">{game.last_trick.winner_nickname}</span> ganhou
-          </p>
-        )}
-      </div>
-
-      {/* Player hand at bottom */}
-      <div className="px-4 pb-6 pt-2">
-        <div className="flex justify-center gap-2 sm:gap-3">
-          {game.your_hand.map((card) => (
-            <Card
-              key={card.id}
-              card={card}
-              size="lg"
-              playable={game.you_can_play && !resolving}
-              onClick={() => playCard(card.id)}
-            />
-          ))}
+          {/* Right opponent */}
+          {rightOpp ? (
+            <div className="flex-none w-12 flex flex-col items-center justify-center gap-0.5 px-0.5">
+              <OpponentLabel player={rightOpp.player} isTurn={rightOpp.player.id === game.turn_player_id} vertical />
+              <div className="flex flex-col gap-0.5">
+                {Array.from({ length: rightOpp.player.hand_count }).map((_, i) => (
+                  <CardBack key={i} size="xs" />
+                ))}
+              </div>
+            </div>
+          ) : <div className="w-0" />}
         </div>
       </div>
 
-      {/* Ad placeholder bottom */}
-      <div id="ad-bottom-anchor">{/* Google AdSense / AdMob anchor */}</div>
+      {/* Player hand — scrollable */}
+      <div className="flex-none border-t border-border/30 bg-card/40">
+        <div className="overflow-x-auto px-3 py-2 scrollbar-hide">
+          <div className="flex gap-2 w-max mx-auto">
+            {game.your_hand.map((card) => (
+              <Card
+                key={card.id}
+                card={card}
+                size="md"
+                playable={game.you_can_play && !resolving}
+                onClick={() => playCard(card.id)}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
 
       {/* Result overlay */}
       {game.result && <GameResultOverlay result={game.result} />}
@@ -129,9 +145,31 @@ export default function GameTableScreen() {
   );
 }
 
-// ScoreBoard
+/* ── Trump & Stock ── */
+function TrumpStock({ game }: { game: GameSnapshot }) {
+  return (
+    <div className="relative flex flex-col items-center" style={{ width: 56 }}>
+      <div className="relative" style={{ width: 40, height: 56 }}>
+        {game.trump_available && game.trump_card && (
+          <div className="absolute" style={{ transform: "rotate(90deg)", top: 6, left: -14, zIndex: 0 }}>
+            <Card card={game.trump_card} size="xs" />
+          </div>
+        )}
+        {game.stock_count > 0 && (
+          <div className="absolute top-0 left-0" style={{ zIndex: 2 }}>
+            <CardBack size="xs" count={game.stock_count} />
+          </div>
+        )}
+      </div>
+      <span className="text-[9px] text-primary font-display font-semibold uppercase leading-none mt-0.5">
+        Trunfo{!game.trump_available && `: ${game.trump_suit}`}
+      </span>
+    </div>
+  );
+}
+
+/* ── ScoreBoard ── */
 function ScoreBoard({ game, players }: { game: GameSnapshot; players: RoomPlayerSnapshot[] }) {
-  // Group by team_id
   const teams = new Map<number, { names: string[]; captured: number }>();
   players.forEach((p) => {
     const tid = p.team_id ?? 0;
@@ -142,9 +180,9 @@ function ScoreBoard({ game, players }: { game: GameSnapshot; players: RoomPlayer
   });
 
   return (
-    <div className="flex gap-3">
+    <div className="flex justify-center gap-4 py-1 text-[10px]">
       {Array.from(teams.entries()).map(([tid, t]) => (
-        <div key={tid} className="text-xs text-center">
+        <div key={tid} className="text-center">
           <div className="text-muted-foreground">{t.names.join(" & ")}</div>
           <div className="text-foreground font-semibold">{t.captured} capturadas</div>
         </div>
@@ -153,18 +191,35 @@ function ScoreBoard({ game, players }: { game: GameSnapshot; players: RoomPlayer
   );
 }
 
-// Opponent positions
-type Position = "top" | "left" | "right";
+/* ── Opponent label ── */
+function OpponentLabel({ player, isTurn, vertical }: { player: RoomPlayerSnapshot; isTurn: boolean; vertical?: boolean }) {
+  const initials = player.nickname.slice(0, 2).toUpperCase();
+  return (
+    <div className={`flex items-center gap-1 ${vertical ? "flex-col" : ""}`}>
+      <div className="w-5 h-5 rounded-full bg-secondary flex items-center justify-center text-[8px] font-bold text-secondary-foreground">
+        {initials}
+      </div>
+      <span className={`text-[9px] font-medium leading-none ${isTurn ? "text-primary" : "text-muted-foreground"} ${vertical ? "writing-mode-vertical" : ""}`}>
+        {player.nickname}
+        {isTurn && " ⏳"}
+        {!player.connected && " 🔴"}
+      </span>
+    </div>
+  );
+}
 
-function getOpponentPositions(
+/* ── Opponent positions ── */
+type Slot = "top" | "left" | "right";
+
+function getOpponentSlots(
   players: RoomPlayerSnapshot[],
   seatingOrder: string[],
   viewerSeat: number,
   total: number
-): { player: RoomPlayerSnapshot; position: Position }[] {
-  const result: { player: RoomPlayerSnapshot; position: Position }[] = [];
-  const positions2: Position[] = ["top"];
-  const positions3: Position[] = ["left", "top", "right"];
+): { player: RoomPlayerSnapshot; slot: Slot }[] {
+  const result: { player: RoomPlayerSnapshot; slot: Slot }[] = [];
+  const slotMap2: Slot[] = ["top"];
+  const slotMap4: Slot[] = ["left", "top", "right"];
 
   for (let i = 1; i < total; i++) {
     const seatIdx = (viewerSeat + i) % total;
@@ -172,40 +227,15 @@ function getOpponentPositions(
     const player = players.find((p) => p.id === playerId);
     if (!player) continue;
 
-    let pos: Position;
+    let slot: Slot;
     if (total === 2) {
-      pos = positions2[0];
+      slot = slotMap2[0];
     } else if (total === 4) {
-      pos = positions3[i - 1] || "top";
+      slot = slotMap4[i - 1] || "top";
     } else {
-      pos = "top";
+      slot = "top";
     }
-
-    result.push({ player, position: pos });
+    result.push({ player, slot });
   }
   return result;
-}
-
-function OpponentHand({ position, player, isTurn }: { position: Position; player: RoomPlayerSnapshot; isTurn: boolean }) {
-  const posClasses: Record<Position, string> = {
-    top: "absolute top-16 left-1/2 -translate-x-1/2",
-    left: "absolute left-4 top-1/2 -translate-y-1/2",
-    right: "absolute right-4 top-1/2 -translate-y-1/2",
-  };
-
-  const isHorizontal = position === "left" || position === "right";
-
-  return (
-    <div className={`${posClasses[position]} flex flex-col items-center gap-1 z-10`}>
-      <span className={`text-xs font-medium ${isTurn ? "text-primary" : "text-muted-foreground"}`}>
-        {player.nickname} {isTurn && "⏳"}
-        {!player.connected && " 🔴"}
-      </span>
-      <div className={`flex ${isHorizontal ? "flex-col" : "flex-row"} gap-0.5`}>
-        {Array.from({ length: player.hand_count }).map((_, i) => (
-          <CardBack key={i} size="sm" />
-        ))}
-      </div>
-    </div>
-  );
 }
