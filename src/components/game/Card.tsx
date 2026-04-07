@@ -7,7 +7,7 @@ interface CardProps {
   playable?: boolean;
   isWinner?: boolean;
   onClick?: () => void;
-  size?: "xs" | "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "hand" | "md" | "lg";
 }
 
 const SIZES = {
