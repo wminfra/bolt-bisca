@@ -7,12 +7,13 @@ interface CardProps {
   playable?: boolean;
   isWinner?: boolean;
   onClick?: () => void;
-  size?: "xs" | "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "hand" | "md" | "lg";
 }
 
 const SIZES = {
   xs: "w-10 h-14",
   sm: "w-14 h-20",
+  hand: "w-[4.5rem] h-[6.3rem]",
   md: "w-20 h-28",
   lg: "w-24 h-36",
 };
@@ -31,7 +32,7 @@ export default function Card({ card, playable, isWinner, onClick, size = "md" }:
 }
 
 interface CardBackProps {
-  size?: "xs" | "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "hand" | "md" | "lg";
   count?: number;
 }
 
