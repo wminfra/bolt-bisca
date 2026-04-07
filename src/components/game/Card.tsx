@@ -7,10 +7,11 @@ interface CardProps {
   playable?: boolean;
   isWinner?: boolean;
   onClick?: () => void;
-  size?: "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "md" | "lg";
 }
 
 const SIZES = {
+  xs: "w-10 h-14",
   sm: "w-14 h-20",
   md: "w-20 h-28",
   lg: "w-24 h-36",
