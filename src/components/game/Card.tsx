@@ -32,7 +32,7 @@ export default function Card({ card, playable, isWinner, onClick, size = "md" }:
 }
 
 interface CardBackProps {
-  size?: "xs" | "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "hand" | "md" | "lg";
   count?: number;
 }
 
