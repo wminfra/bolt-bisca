@@ -31,7 +31,7 @@ export default function Card({ card, playable, isWinner, onClick, size = "md" }:
 }
 
 interface CardBackProps {
-  size?: "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "md" | "lg";
   count?: number;
 }
 
