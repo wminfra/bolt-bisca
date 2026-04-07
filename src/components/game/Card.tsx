@@ -13,6 +13,7 @@ interface CardProps {
 const SIZES = {
   xs: "w-10 h-14",
   sm: "w-14 h-20",
+  hand: "w-[4.5rem] h-[6.3rem]",
   md: "w-20 h-28",
   lg: "w-24 h-36",
 };

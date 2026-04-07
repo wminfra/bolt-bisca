@@ -22,7 +22,6 @@ export default function GameTableScreen() {
   const totalPlayers = seating_order.length;
   const opponents = getOpponentSlots(room.players, seating_order, viewer_seat, totalPlayers);
 
-  // Split opponents: top = across, sides = left/right (4p only)
   const topOpp = opponents.find((o) => o.slot === "top");
   const leftOpp = opponents.find((o) => o.slot === "left");
   const rightOpp = opponents.find((o) => o.slot === "right");
@@ -30,7 +29,7 @@ export default function GameTableScreen() {
   return (
     <div className="screen fixed inset-0 felt-bg flex flex-col overflow-hidden">
       {/* Top bar */}
-      <div className="flex-none flex items-center justify-between px-3 py-1.5 bg-card/80 border-b border-border text-[11px]">
+      <div className="flex-none flex items-center justify-between px-3 py-1 bg-card/80 border-b border-border text-[11px]">
         <div>
           <span className="text-muted-foreground">Sala </span>
           <span className="font-mono text-primary">{room.id}</span>
@@ -46,7 +45,7 @@ export default function GameTableScreen() {
         <ScoreBoard game={game} players={room.players} />
       </div>
 
-      {/* Main game area — vertical stack */}
+      {/* Main game area */}
       <div className="flex-1 flex flex-col min-h-0">
         {/* Top opponent */}
         {topOpp && (
@@ -74,30 +73,29 @@ export default function GameTableScreen() {
             </div>
           ) : <div className="w-0" />}
 
-          {/* Center: trump/stock + table cards */}
-          <div className="flex-1 flex flex-col items-center justify-center min-h-0 gap-2">
-            {/* Trump + Stock row */}
-            <div className="flex items-center gap-3">
-              <TrumpStock game={game} />
-              {/* Table cards */}
-              <div className="flex gap-2 items-end min-h-[5rem]">
-                {game.table_cards.map((tc, idx) => {
-                  const isWinner = resolving && game.last_trick
-                    ? game.last_trick.winning_card.id === tc.card.id
-                    : false;
-                  return (
-                    <div key={tc.player_id} className="flex flex-col items-center gap-0.5" style={{ zIndex: idx + 1 }}>
-                      <Card card={tc.card} size="sm" isWinner={isWinner} />
-                      <span className="text-[9px] text-muted-foreground leading-none">{tc.nickname}</span>
-                    </div>
-                  );
-                })}
-                {game.table_cards.length === 0 && (
-                  <div className="w-14 h-20 border border-dashed border-border/30 rounded-lg flex items-center justify-center text-muted-foreground text-[9px]">
-                    Mesa vazia
+          {/* Center area: trump/stock centered above table cards */}
+          <div className="flex-1 flex flex-col items-center justify-center min-h-0 gap-1">
+            {/* Trump + Stock — centered above table */}
+            <TrumpStock game={game} />
+
+            {/* Table cards */}
+            <div className="flex gap-2 items-end justify-center min-h-[4.5rem] flex-wrap">
+              {game.table_cards.map((tc, idx) => {
+                const isWinner = resolving && game.last_trick
+                  ? game.last_trick.winning_card.id === tc.card.id
+                  : false;
+                return (
+                  <div key={tc.player_id} className="flex flex-col items-center gap-0.5" style={{ zIndex: idx + 1 }}>
+                    <Card card={tc.card} size="sm" isWinner={isWinner} />
+                    <span className="text-[9px] text-muted-foreground leading-none">{tc.nickname}</span>
                   </div>
-                )}
-              </div>
+                );
+              })}
+              {game.table_cards.length === 0 && (
+                <div className="w-14 h-20 border border-dashed border-border/30 rounded-lg flex items-center justify-center text-muted-foreground text-[9px]">
+                  Mesa vazia
+                </div>
+              )}
             </div>
 
             {/* Last trick info */}
@@ -122,20 +120,18 @@ export default function GameTableScreen() {
         </div>
       </div>
 
-      {/* Player hand — scrollable */}
-      <div className="flex-none border-t border-border/30 bg-card/40">
-        <div className="overflow-x-auto px-3 py-2 scrollbar-hide">
-          <div className="flex gap-2 w-max mx-auto">
-            {game.your_hand.map((card) => (
-              <Card
-                key={card.id}
-                card={card}
-                size="md"
-                playable={game.you_can_play && !resolving}
-                onClick={() => playCard(card.id)}
-              />
-            ))}
-          </div>
+      {/* Player hand — 3x2 grid */}
+      <div className="flex-none border-t border-border/30 bg-card/40 px-2 py-2">
+        <div className="grid grid-cols-3 gap-1.5 w-fit mx-auto">
+          {game.your_hand.map((card) => (
+            <Card
+              key={card.id}
+              card={card}
+              size="hand"
+              playable={game.you_can_play && !resolving}
+              onClick={() => playCard(card.id)}
+            />
+          ))}
         </div>
       </div>
 
@@ -148,16 +144,26 @@ export default function GameTableScreen() {
 /* ── Trump & Stock ── */
 function TrumpStock({ game }: { game: GameSnapshot }) {
   return (
-    <div className="relative flex flex-col items-center" style={{ width: 56 }}>
-      <div className="relative" style={{ width: 40, height: 56 }}>
+    <div className="relative flex flex-col items-center" style={{ width: 72, height: 60 }}>
+      <div className="relative" style={{ width: 48, height: 56 }}>
+        {/* Trump card — rotated, peeking left under the stock */}
         {game.trump_available && game.trump_card && (
-          <div className="absolute" style={{ transform: "rotate(90deg)", top: 6, left: -14, zIndex: 0 }}>
-            <Card card={game.trump_card} size="xs" />
+          <div
+            className="absolute"
+            style={{
+              transform: "rotate(-90deg)",
+              top: 4,
+              left: -45,
+              zIndex: 1,
+            }}
+          >
+            <Card card={game.trump_card} size="sm" />
           </div>
         )}
+        {/* Stock pile on top */}
         {game.stock_count > 0 && (
           <div className="absolute top-0 left-0" style={{ zIndex: 2 }}>
-            <CardBack size="xs" count={game.stock_count} />
+            <CardBack size="sm" count={game.stock_count} />
           </div>
         )}
       </div>
