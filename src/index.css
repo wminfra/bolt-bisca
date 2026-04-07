@@ -242,3 +242,10 @@
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: hsl(var(--background)); }
 ::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 3px; }
+
+/* Hide scrollbar for hand area */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Vertical text for side opponents */
+.writing-mode-vertical { writing-mode: vertical-rl; text-orientation: mixed; }
