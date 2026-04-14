@@ -4,6 +4,12 @@ import { useGame } from "@/contexts/GameContext";
 import { leaveRoom } from "@/lib/api";
 import { showToast } from "@/components/game/ToastManager";
 
+const REASON_LABELS: Record<string, string> = {
+  surrender: "Desistência",
+  walkover: "Abandono (W.O.)",
+  completed: "Fim de Jogo",
+};
+
 export default function GameResultOverlay({ result }: { result: MatchResult }) {
   const { updateSession } = useGame();
 
@@ -16,16 +22,30 @@ export default function GameResultOverlay({ result }: { result: MatchResult }) {
     }
   };
 
+  const viewerWon = result.viewer_won === true;
+  const reasonText = REASON_LABELS[result.finish_reason ?? "completed"] ?? "Fim de Jogo";
+
   return (
     <div className="modal-overlay" style={{ zIndex: 200 }}>
       <div className="bg-card rounded-lg p-8 w-full max-w-sm border border-primary/50 text-center">
-        <h2 className="text-3xl font-display font-bold text-primary mb-2">
-          {result.is_tie ? "Empate!" : "🏆 Vitória!"}
+        {/* Victory / Defeat / Tie header */}
+        <h2 className={`text-3xl font-display font-bold mb-1 ${
+          result.is_tie ? "text-muted-foreground" : viewerWon ? "text-primary" : "text-destructive"
+        }`}>
+          {result.is_tie ? "Empate!" : viewerWon ? "🏆 Vitória!" : "😞 Derrota"}
         </h2>
-        <p className="text-lg text-foreground font-display mb-6">
-          {result.winner_label}
+
+        {/* Winner label */}
+        <p className="text-lg text-foreground font-display mb-1">
+          {result.winner_team_label || result.winner_label}
         </p>
 
+        {/* Finish reason badge */}
+        <span className="inline-block text-[10px] px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground mb-4">
+          {reasonText}
+        </span>
+
+        {/* Scoreboard */}
         <div className="space-y-3 mb-6">
           {result.scoreboard.map((team) => (
             <div

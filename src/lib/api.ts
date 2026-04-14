@@ -79,3 +79,6 @@ export const selectPartner = (roomId: string, data: SelectPartnerPayload) =>
 
 export const startGame = (roomId: string) =>
   request<SessionResponse>(`/api/rooms/${roomId}/start`, { method: "POST" });
+
+export const surrender = () =>
+  request<SessionResponse>("/api/rooms/surrender", { method: "POST" });

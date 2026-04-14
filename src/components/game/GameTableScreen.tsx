@@ -1,14 +1,17 @@
-import React from "react";
+import React, { useState } from "react";
 import { useGame } from "@/contexts/GameContext";
 import { sendWs } from "@/lib/websocket";
+import { surrender } from "@/lib/api";
 import Card, { CardBack } from "@/components/game/Card";
-import type { RoomPlayerSnapshot, GameSnapshot, CardSnapshot } from "@/lib/types";
+import type { RoomPlayerSnapshot, GameSnapshot } from "@/lib/types";
 import GameResultOverlay from "@/components/game/GameResultOverlay";
+import { showToast } from "@/components/game/ToastManager";
 
 export default function GameTableScreen() {
-  const { session } = useGame();
+  const { session, updateSession } = useGame();
   const room = session?.room;
   const game = room?.game;
+  const [surrendering, setSurrendering] = useState(false);
   if (!room || !game) return null;
 
   const resolving = game.resolving === true;
@@ -16,6 +19,23 @@ export default function GameTableScreen() {
   const playCard = (cardId: string) => {
     if (!game.you_can_play || resolving) return;
     sendWs({ type: "play_card", payload: { card_id: cardId } });
+  };
+
+  const handleSurrender = async () => {
+    if (!confirm("Tem certeza que deseja desistir? A vitória será dada ao adversário.")) return;
+    setSurrendering(true);
+    try {
+      const res = await surrender();
+      updateSession(res.session);
+    } catch (err: any) {
+      if (err.message?.includes("409") || err.message?.toLowerCase().includes("conflict")) {
+        showToast("error", "Desistência não permitida neste momento.");
+      } else {
+        showToast("error", err.message ?? "Erro ao desistir.");
+      }
+    } finally {
+      setSurrendering(false);
+    }
   };
 
   const { seating_order, viewer_seat } = game;
@@ -35,8 +55,19 @@ export default function GameTableScreen() {
           <span className="font-mono text-primary">{room.id}</span>
           <span className="text-muted-foreground ml-2">Vaza #{game.trick_number}</span>
         </div>
-        <div className="text-muted-foreground">
-          Vez: <span className="text-foreground font-medium">{game.turn_nickname}</span>
+        <div className="flex items-center gap-3">
+          <span className="text-muted-foreground">
+            Vez: <span className="text-foreground font-medium">{game.turn_nickname}</span>
+          </span>
+          {room.status === "playing" && (
+            <button
+              onClick={handleSurrender}
+              disabled={surrendering}
+              className="px-2 py-0.5 rounded bg-destructive/80 text-destructive-foreground text-[10px] font-semibold hover:bg-destructive transition-colors disabled:opacity-50"
+            >
+              🏳️ Desistir
+            </button>
+          )}
         </div>
       </div>
 
@@ -73,9 +104,8 @@ export default function GameTableScreen() {
             </div>
           ) : <div className="w-0" />}
 
-          {/* Center area: trump/stock centered above table cards */}
+          {/* Center area */}
           <div className="flex-1 flex flex-col items-center justify-center min-h-0 gap-1">
-            {/* Trump + Stock — centered above table */}
             <TrumpStock game={game} />
 
             {/* Table cards */}
@@ -98,7 +128,6 @@ export default function GameTableScreen() {
               )}
             </div>
 
-            {/* Last trick info */}
             {game.last_trick && !resolving && (
               <p className="text-[10px] text-muted-foreground">
                 Última vaza: <span className="text-foreground">{game.last_trick.winner_nickname}</span> ganhou
@@ -146,21 +175,14 @@ function TrumpStock({ game }: { game: GameSnapshot }) {
   return (
     <div className="relative flex flex-col items-center" style={{ width: 72, height: 60 }}>
       <div className="relative" style={{ width: 48, height: 56 }}>
-        {/* Trump card — rotated, peeking left under the stock */}
         {game.trump_available && game.trump_card && (
           <div
             className="absolute"
-            style={{
-              transform: "rotate(-90deg)",
-              top: 4,
-              left: -45,
-              zIndex: 1,
-            }}
+            style={{ transform: "rotate(-90deg)", top: 4, left: -45, zIndex: 1 }}
           >
             <Card card={game.trump_card} size="sm" />
           </div>
         )}
-        {/* Stock pile on top */}
         {game.stock_count > 0 && (
           <div className="absolute top-0 left-0" style={{ zIndex: 2 }}>
             <CardBack size="sm" count={game.stock_count} />
@@ -197,18 +219,26 @@ function ScoreBoard({ game, players }: { game: GameSnapshot; players: RoomPlayer
   );
 }
 
-/* ── Opponent label ── */
+/* ── Opponent label with connection feedback ── */
 function OpponentLabel({ player, isTurn, vertical }: { player: RoomPlayerSnapshot; isTurn: boolean; vertical?: boolean }) {
   const initials = player.nickname.slice(0, 2).toUpperCase();
+  const disconnected = !player.connected;
+
   return (
-    <div className={`flex items-center gap-1 ${vertical ? "flex-col" : ""}`}>
-      <div className="w-5 h-5 rounded-full bg-secondary flex items-center justify-center text-[8px] font-bold text-secondary-foreground">
-        {initials}
+    <div className={`flex items-center gap-1 ${vertical ? "flex-col" : ""} ${disconnected ? "opacity-50 grayscale" : ""}`}>
+      <div className="relative">
+        <div className="w-5 h-5 rounded-full bg-secondary flex items-center justify-center text-[8px] font-bold text-secondary-foreground">
+          {initials}
+        </div>
+        {disconnected && (
+          <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-destructive flex items-center justify-center text-[6px] text-destructive-foreground leading-none">
+            ⚡
+          </div>
+        )}
       </div>
       <span className={`text-[9px] font-medium leading-none ${isTurn ? "text-primary" : "text-muted-foreground"} ${vertical ? "writing-mode-vertical" : ""}`}>
         {player.nickname}
         {isTurn && " ⏳"}
-        {!player.connected && " 🔴"}
       </span>
     </div>
   );
