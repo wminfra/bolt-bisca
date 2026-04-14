@@ -57,9 +57,12 @@ export interface MatchResult {
   scoreboard: TeamScore[];
   winner_team_id: number | null;
   winner_label: string;
+  winner_team_label?: string;
   is_tie: boolean;
   target: number;
   total_points: number;
+  finish_reason?: "completed" | "surrender" | "walkover";
+  viewer_won?: boolean;
 }
 
 export interface GameSnapshot {
