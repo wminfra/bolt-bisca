@@ -2,7 +2,7 @@ import React, { useState, useContext } from "react";
 import { login, register } from "@/lib/api";
 import { useGame } from "@/contexts/GameContext";
 import { showToast } from "@/components/game/ToastManager";
-import { PracticeCtx } from "@/components/game/BiscaGame";
+import { PracticeCtx } from "@/contexts/PracticeContext";
 
 export default function LoginScreen() {
   const { handleLogin } = useGame();
