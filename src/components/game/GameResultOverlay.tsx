@@ -8,10 +8,13 @@ const REASON_LABELS: Record<string, string> = {
   surrender: "Desistência",
   walkover: "Abandono (W.O.)",
   completed: "Fim de Jogo",
+  "Desistencia": "Desistência",
+  "Abandono por Conexao": "Abandono (W.O.)",
+  "Normal": "Fim de Jogo",
 };
 
 export default function GameResultOverlay({ result }: { result: MatchResult }) {
-  const { updateSession } = useGame();
+  const { session, updateSession } = useGame();
 
   const handleLeave = async () => {
     try {
@@ -22,8 +25,10 @@ export default function GameResultOverlay({ result }: { result: MatchResult }) {
     }
   };
 
-  const viewerWon = result.viewer_won === true;
-  const reasonText = REASON_LABELS[result.finish_reason ?? "completed"] ?? "Fim de Jogo";
+//  const viewerWon = result.viewer_won === true;
+const viewerTeamId = session?.room?.players.find((p) => p.is_you)?.team_id;
+const viewerWon = viewerTeamId !== undefined && viewerTeamId === result.winner_team_id;
+const reasonText = REASON_LABELS[result.finish_reason ?? "completed"] ?? "Fim de Jogo";
 
   return (
     <div className="modal-overlay" style={{ zIndex: 200 }}>

@@ -90,6 +90,9 @@ export default function GameTableScreen() {
           </div>
         )}
 
+        {/* Trump + Stock — centered above table */}
+        <TrumpStock game={game} />
+
         {/* Middle section: sides + center */}
         <div className="flex-1 flex min-h-0">
           {/* Left opponent */}
@@ -106,7 +109,6 @@ export default function GameTableScreen() {
 
           {/* Center area */}
           <div className="flex-1 flex flex-col items-center justify-center min-h-0 gap-1">
-            <TrumpStock game={game} />
 
             {/* Table cards */}
             <div className="flex gap-2 items-end justify-center min-h-[4.5rem] flex-wrap">
@@ -173,7 +175,7 @@ export default function GameTableScreen() {
 /* ── Trump & Stock ── */
 function TrumpStock({ game }: { game: GameSnapshot }) {
   return (
-    <div className="relative flex flex-col items-center" style={{ width: 72, height: 60 }}>
+    <div className="relative flex flex-col items-center self-center" style={{ width: 72, height: 60 }}>
       <div className="relative" style={{ width: 48, height: 56 }}>
         {game.trump_available && game.trump_card && (
           <div
