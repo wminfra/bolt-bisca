@@ -1,30 +1,60 @@
 import { WS_BASE } from "./config";
 import type { WsClientMessage, WsServerMessage } from "./types";
 
+export type ConnectionStatus = "connected" | "disconnected" | "reconnecting";
+
 type MessageHandler = (msg: WsServerMessage) => void;
-type StatusHandler = (connected: boolean) => void;
+type StatusHandler = (status: ConnectionStatus) => void;
 
 let ws: WebSocket | null = null;
 let messageHandlers: MessageHandler[] = [];
 let statusHandlers: StatusHandler[] = [];
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 let currentToken: string | null = null;
+let currentStatus: ConnectionStatus = "disconnected";
+let reconnectAttempts = 0;
+let resyncCallback: (() => Promise<void>) | null = null;
 
-export function connectWs(token: string) {
-  currentToken = token;
+const MAX_BACKOFF_MS = 15000;
+const BASE_BACKOFF_MS = 3000;
+
+function setStatus(s: ConnectionStatus) {
+  currentStatus = s;
+  statusHandlers.forEach((h) => h(s));
+}
+
+export function getStatus(): ConnectionStatus {
+  return currentStatus;
+}
+
+export function setResyncCallback(cb: (() => Promise<void>) | null) {
+  resyncCallback = cb;
+}
+
+function clearReconnectTimer() {
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer);
+    reconnectTimer = null;
+  }
+}
+
+function openSocket(token: string) {
+  // Ensure no duplicate sockets
   if (ws) {
+    ws.onopen = null;
     ws.onclose = null;
-    ws.close();
+    ws.onerror = null;
+    ws.onmessage = null;
+    try { ws.close(); } catch { /* noop */ }
+    ws = null;
   }
 
   ws = new WebSocket(`${WS_BASE}/ws?token=${token}`);
 
   ws.onopen = () => {
-    statusHandlers.forEach((h) => h(true));
-    if (reconnectTimer) {
-      clearTimeout(reconnectTimer);
-      reconnectTimer = null;
-    }
+    reconnectAttempts = 0;
+    clearReconnectTimer();
+    setStatus("connected");
   };
 
   ws.onmessage = (event) => {
@@ -37,32 +67,68 @@ export function connectWs(token: string) {
   };
 
   ws.onclose = () => {
-    statusHandlers.forEach((h) => h(false));
-    // auto-reconnect after 3s
-    if (currentToken) {
-      reconnectTimer = setTimeout(() => {
-        if (currentToken) connectWs(currentToken);
-      }, 3000);
+    if (!currentToken) {
+      setStatus("disconnected");
+      return;
     }
+    scheduleReconnect();
   };
 
   ws.onerror = () => {
-    ws?.close();
+    try { ws?.close(); } catch { /* noop */ }
   };
+}
+
+function scheduleReconnect() {
+  if (!currentToken) return;
+  clearReconnectTimer();
+  setStatus("reconnecting");
+  const delay = Math.min(BASE_BACKOFF_MS * Math.pow(1.5, reconnectAttempts), MAX_BACKOFF_MS);
+  reconnectAttempts += 1;
+  reconnectTimer = setTimeout(() => {
+    void attemptReconnect();
+  }, delay);
+}
+
+async function attemptReconnect() {
+  if (!currentToken) return;
+  try {
+    if (resyncCallback) {
+      await resyncCallback();
+    }
+    if (currentToken) openSocket(currentToken);
+  } catch {
+    // resync failed (likely 401 already handled by callback) — schedule again
+    scheduleReconnect();
+  }
+}
+
+export function connectWs(token: string) {
+  currentToken = token;
+  reconnectAttempts = 0;
+  openSocket(token);
+}
+
+export function reconnectNow() {
+  if (!currentToken) return;
+  clearReconnectTimer();
+  reconnectAttempts = 0;
+  void attemptReconnect();
 }
 
 export function disconnectWs() {
   currentToken = null;
-  if (reconnectTimer) {
-    clearTimeout(reconnectTimer);
-    reconnectTimer = null;
-  }
+  clearReconnectTimer();
+  reconnectAttempts = 0;
   if (ws) {
     ws.onclose = null;
-    ws.close();
+    ws.onerror = null;
+    ws.onmessage = null;
+    ws.onopen = null;
+    try { ws.close(); } catch { /* noop */ }
     ws = null;
   }
-  statusHandlers.forEach((h) => h(false));
+  setStatus("disconnected");
 }
 
 export function sendWs(msg: WsClientMessage) {
@@ -80,6 +146,8 @@ export function onWsMessage(handler: MessageHandler) {
 
 export function onWsStatus(handler: StatusHandler) {
   statusHandlers.push(handler);
+  // Emit current status immediately
+  handler(currentStatus);
   return () => {
     statusHandlers = statusHandlers.filter((h) => h !== handler);
   };

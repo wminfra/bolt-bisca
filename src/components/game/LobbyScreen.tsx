@@ -5,6 +5,7 @@ import { showToast } from "@/components/game/ToastManager";
 import type { PublicRoom, RoomMode } from "@/lib/types";
 import { PracticeCtx } from "@/components/game/BiscaGame";
 import type { Difficulty } from "@/lib/practice/biscaEngine";
+import ConnectionStatus from "@/components/game/ConnectionStatus";
 
 export default function LobbyScreen() {
   const { session, updateSession, logout } = useGame();
@@ -70,12 +71,15 @@ export default function LobbyScreen() {
               Olá, <span className="text-foreground font-medium">{session?.user.nickname}</span>
             </p>
           </div>
-          <button
-            onClick={logout}
-            className="text-sm text-muted-foreground hover:text-accent transition-colors"
-          >
-            Sair
-          </button>
+          <div className="flex items-center gap-3">
+            <ConnectionStatus />
+            <button
+              onClick={logout}
+              className="text-sm text-muted-foreground hover:text-accent transition-colors"
+            >
+              Sair
+            </button>
+          </div>
         </div>
 
         {/* Ad placeholder */}
