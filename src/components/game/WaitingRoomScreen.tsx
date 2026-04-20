@@ -61,6 +61,9 @@ export default function WaitingRoomScreen() {
     <div className="screen min-h-screen felt-bg p-4 flex items-center justify-center">
       <div className="w-full max-w-md">
         <div className="bg-card rounded-lg border border-border p-6">
+          <div className="flex justify-end mb-2">
+            <ConnectionStatus />
+          </div>
           <div className="text-center mb-6">
             <h2 className="text-xl font-display font-bold text-foreground">Sala de Espera</h2>
             <div className="flex items-center justify-center gap-2 mt-2">

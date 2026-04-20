@@ -6,6 +6,7 @@ import Card, { CardBack } from "@/components/game/Card";
 import type { RoomPlayerSnapshot, GameSnapshot } from "@/lib/types";
 import GameResultOverlay from "@/components/game/GameResultOverlay";
 import { showToast } from "@/components/game/ToastManager";
+import ConnectionStatus from "@/components/game/ConnectionStatus";
 
 export default function GameTableScreen() {
   const { session, updateSession } = useGame();
@@ -55,7 +56,8 @@ export default function GameTableScreen() {
           <span className="font-mono text-primary">{room.id}</span>
           <span className="text-muted-foreground ml-2">Vaza #{game.trick_number}</span>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          <ConnectionStatus />
           <span className="text-muted-foreground">
             Vez: <span className="text-foreground font-medium">{game.turn_nickname}</span>
           </span>
