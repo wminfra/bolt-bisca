@@ -163,6 +163,80 @@ export default function LobbyScreen() {
           onCreated={(session) => updateSession(session)}
         />
       )}
+
+      {/* Practice Modal */}
+      {showPracticeModal && (
+        <PracticeModal
+          onClose={() => setShowPracticeModal(false)}
+          onStart={(d) => {
+            setShowPracticeModal(false);
+            practice.start(d);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function PracticeModal({
+  onClose,
+  onStart,
+}: {
+  onClose: () => void;
+  onStart: (d: Difficulty) => void;
+}) {
+  const [difficulty, setDifficulty] = useState<Difficulty>("medium");
+
+  const labels: Record<Difficulty, { title: string; desc: string }> = {
+    easy: { title: "Fácil", desc: "Bot joga cartas aleatórias" },
+    medium: { title: "Médio", desc: "Bot avalia vazas valiosas" },
+    hard: { title: "Difícil", desc: "Bot conta cartas e guarda trunfos" },
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div
+        className="bg-card rounded-lg p-6 w-full max-w-sm border border-border"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="text-xl font-display font-bold text-foreground mb-1">Modo Praticar</h2>
+        <p className="text-xs text-muted-foreground mb-4">
+          Jogue contra o bot offline. Sem ranking ou persistência.
+        </p>
+
+        <label className="block text-sm font-medium text-foreground mb-2">Dificuldade</label>
+        <div className="space-y-2 mb-4">
+          {(Object.keys(labels) as Difficulty[]).map((d) => (
+            <button
+              key={d}
+              onClick={() => setDifficulty(d)}
+              className={`w-full text-left p-3 rounded-md border transition-colors ${
+                difficulty === d
+                  ? "border-primary bg-primary/10"
+                  : "border-border bg-secondary hover:bg-muted"
+              }`}
+            >
+              <div className="font-display font-semibold text-foreground">{labels[d].title}</div>
+              <div className="text-xs text-muted-foreground">{labels[d].desc}</div>
+            </button>
+          ))}
+        </div>
+
+        <div className="flex gap-2">
+          <button
+            onClick={onClose}
+            className="flex-1 py-2 rounded-md bg-secondary text-secondary-foreground hover:bg-muted transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={() => onStart(difficulty)}
+            className="flex-1 py-2 rounded-md bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity"
+          >
+            Começar
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
