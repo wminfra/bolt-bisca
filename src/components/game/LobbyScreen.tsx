@@ -1,13 +1,17 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { useGame } from "@/contexts/GameContext";
 import { getPublicRooms, createRoom, joinRoom } from "@/lib/api";
 import { showToast } from "@/components/game/ToastManager";
 import type { PublicRoom, RoomMode } from "@/lib/types";
+import { PracticeCtx } from "@/components/game/BiscaGame";
+import type { Difficulty } from "@/lib/practice/biscaEngine";
 
 export default function LobbyScreen() {
   const { session, updateSession, logout } = useGame();
+  const practice = useContext(PracticeCtx);
   const [rooms, setRooms] = useState<PublicRoom[]>(session?.public_rooms || []);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showPracticeModal, setShowPracticeModal] = useState(false);
   const [joinId, setJoinId] = useState("");
   const [loading, setLoading] = useState(false);
 
