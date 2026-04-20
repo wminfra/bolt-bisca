@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useGame } from "@/contexts/GameContext";
 import { leaveRoom, selectPartner, startGame } from "@/lib/api";
 import { showToast } from "@/components/game/ToastManager";
+import ConnectionStatus from "@/components/game/ConnectionStatus";
 
 export default function WaitingRoomScreen() {
   const { session, updateSession } = useGame();
