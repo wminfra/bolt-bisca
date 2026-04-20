@@ -82,29 +82,37 @@ export default function LobbyScreen() {
         <div id="ad-top-banner">{/* Google AdSense banner */}</div>
 
         {/* Actions */}
-        <div className="flex gap-3 mb-6">
+        <div className="flex flex-col gap-3 mb-6">
           <button
-            onClick={() => setShowCreateModal(true)}
-            className="flex-1 py-2.5 bg-primary text-primary-foreground rounded-md font-display font-semibold hover:opacity-90 transition-opacity"
+            onClick={() => setShowPracticeModal(true)}
+            className="w-full py-2.5 bg-accent text-accent-foreground rounded-md font-display font-semibold hover:opacity-90 transition-opacity"
           >
-            Criar Sala
+            🎯 Modo Praticar (Single Player)
           </button>
-          <div className="flex-1 flex gap-2">
-            <input
-              type="text"
-              value={joinId}
-              onChange={(e) => setJoinId(e.target.value.toUpperCase())}
-              placeholder="ID da sala"
-              maxLength={5}
-              className="flex-1 px-3 py-2 rounded-md bg-secondary text-secondary-foreground border border-border focus:outline-none focus:ring-2 focus:ring-primary uppercase tracking-widest text-center font-mono"
-            />
+          <div className="flex gap-3">
             <button
-              onClick={handleJoinById}
-              disabled={loading}
-              className="px-4 py-2 bg-secondary text-secondary-foreground rounded-md hover:bg-muted transition-colors disabled:opacity-50"
+              onClick={() => setShowCreateModal(true)}
+              className="flex-1 py-2.5 bg-primary text-primary-foreground rounded-md font-display font-semibold hover:opacity-90 transition-opacity"
             >
-              Entrar
+              Criar Sala
             </button>
+            <div className="flex-1 flex gap-2">
+              <input
+                type="text"
+                value={joinId}
+                onChange={(e) => setJoinId(e.target.value.toUpperCase())}
+                placeholder="ID da sala"
+                maxLength={5}
+                className="flex-1 px-3 py-2 rounded-md bg-secondary text-secondary-foreground border border-border focus:outline-none focus:ring-2 focus:ring-primary uppercase tracking-widest text-center font-mono"
+              />
+              <button
+                onClick={handleJoinById}
+                disabled={loading}
+                className="px-4 py-2 bg-secondary text-secondary-foreground rounded-md hover:bg-muted transition-colors disabled:opacity-50"
+              >
+                Entrar
+              </button>
+            </div>
           </div>
         </div>
 
