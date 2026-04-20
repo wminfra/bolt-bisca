@@ -1,10 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { login, register } from "@/lib/api";
 import { useGame } from "@/contexts/GameContext";
 import { showToast } from "@/components/game/ToastManager";
+import { PracticeCtx } from "@/components/game/BiscaGame";
 
 export default function LoginScreen() {
   const { handleLogin } = useGame();
+  const practice = useContext(PracticeCtx);
   const [nickname, setNickname] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -80,6 +82,13 @@ export default function LoginScreen() {
             {isRegister ? "Já tenho conta → Entrar" : "Não tenho conta → Criar"}
           </button>
         </form>
+
+        <button
+          onClick={() => practice.start("medium")}
+          className="w-full mt-4 py-2.5 rounded-md bg-accent text-accent-foreground font-display font-semibold hover:opacity-90 transition-opacity"
+        >
+          🎯 Jogar Offline (Praticar)
+        </button>
       </div>
     </div>
   );
