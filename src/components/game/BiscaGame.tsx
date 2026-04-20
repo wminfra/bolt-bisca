@@ -6,21 +6,8 @@ import WaitingRoomScreen from "@/components/game/WaitingRoomScreen";
 import GameTableScreen from "@/components/game/GameTableScreen";
 import PracticeGameScreen from "@/components/game/PracticeGameScreen";
 import ToastManager from "@/components/game/ToastManager";
+import { PracticeCtx, type PracticeContextValue } from "@/contexts/PracticeContext";
 import type { Difficulty } from "@/lib/practice/biscaEngine";
-
-interface PracticeContext {
-  active: boolean;
-  difficulty: Difficulty;
-  start: (d: Difficulty) => void;
-  exit: () => void;
-}
-
-export const PracticeCtx = React.createContext<PracticeContext>({
-  active: false,
-  difficulty: "easy",
-  start: () => {},
-  exit: () => {},
-});
 
 function ScreenRouter() {
   const { screen } = useGame();
@@ -50,7 +37,7 @@ export default function BiscaGame() {
     difficulty: "easy",
   });
 
-  const ctx: PracticeContext = {
+  const ctx: PracticeContextValue = {
     active: practice.active,
     difficulty: practice.difficulty,
     start: (d) => setPractice({ active: true, difficulty: d }),
@@ -67,7 +54,6 @@ export default function BiscaGame() {
   );
 }
 
-// Mobile ads placeholder
 declare global {
   interface Window {
     initMobileAds?: () => void;
@@ -75,5 +61,4 @@ declare global {
 }
 window.initMobileAds = function () {
   // Future: Load AdMob SDK via WebView bridge
-  // Example: window.AdMob?.showBanner({ adId: '...', position: 'bottom' });
 };

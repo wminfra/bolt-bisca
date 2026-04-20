@@ -3,7 +3,7 @@ import { useGame } from "@/contexts/GameContext";
 import { getPublicRooms, createRoom, joinRoom } from "@/lib/api";
 import { showToast } from "@/components/game/ToastManager";
 import type { PublicRoom, RoomMode } from "@/lib/types";
-import { PracticeCtx } from "@/components/game/BiscaGame";
+import { PracticeCtx } from "@/contexts/PracticeContext";
 import type { Difficulty } from "@/lib/practice/biscaEngine";
 import ConnectionStatus from "@/components/game/ConnectionStatus";
 
