@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import type { MatchResult } from "@/lib/types";
 import { useGame } from "@/contexts/GameContext";
 import { leaveRoom } from "@/lib/api";
 import { showToast } from "@/components/game/ToastManager";
+import { TrendingUp, TrendingDown, Shield } from "lucide-react";
 
 const REASON_LABELS: Record<string, string> = {
   surrender: "Desistência",
@@ -69,6 +70,15 @@ const reasonText = REASON_LABELS[result.finish_reason ?? "completed"] ?? "Fim de
             </div>
           ))}
         </div>
+
+        {/* Ranked ELO change */}
+        {session?.room?.ranked && result.elo_changes && session.user?.id && (
+          <EloChangeBlock
+            change={result.elo_changes[session.user.id] ?? 0}
+            newElo={result.updated_elos?.[session.user.id]}
+            shieldUsed={result.rank_shield?.[session.user.id]?.used}
+          />
+        )}
 
         <p className="text-xs text-muted-foreground mb-4">
           Pontuação: Ás=11, 7=10, Rei=4, Cavalo=3, Sota=2
