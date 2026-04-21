@@ -61,8 +61,11 @@ export interface MatchResult {
   is_tie: boolean;
   target: number;
   total_points: number;
-  finish_reason?: "completed" | "surrender" | "walkover";
+  finish_reason?: "completed" | "surrender" | "walkover" | string;
   viewer_won?: boolean;
+  elo_changes?: Record<string, number>;
+  updated_elos?: Record<string, number>;
+  rank_shield?: Record<string, { used: boolean; remaining_charges: number }>;
 }
 
 export interface GameSnapshot {
@@ -112,11 +115,26 @@ export interface RoomSnapshot {
   start_reason: string | null;
   can_choose_partner: boolean;
   game: GameSnapshot | null;
+  ranked?: boolean;
 }
 
 export interface SessionUser {
   id: string;
   nickname: string;
+  elo?: number;
+  patent?: string;
+  games_played?: number;
+  games_won?: number;
+  penalty_until?: string | null;
+  rank_shield_charges?: number;
+}
+
+export interface RankedQueueState {
+  in_queue: boolean;
+  queue_mode: RoomMode | null;
+  queue_hand_size: 3 | 6 | null;
+  queued_at: string | null;
+  penalty_until: string | null;
 }
 
 export interface PublicRoom {
@@ -133,6 +151,7 @@ export interface SessionSnapshot {
   user: SessionUser;
   public_rooms: PublicRoom[];
   room: RoomSnapshot | null;
+  ranked?: RankedQueueState;
 }
 
 export interface AuthResponse {

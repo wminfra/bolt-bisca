@@ -82,3 +82,10 @@ export const startGame = (roomId: string) =>
 
 export const surrender = () =>
   request<SessionResponse>("/api/rooms/surrender", { method: "POST" });
+
+// Ranked
+export const joinRankedQueue = (data: { mode: "1v1" | "2v2"; hand_size: 3 | 6 }) =>
+  request<SessionResponse>("/api/rooms/ranked/queue/join", { method: "POST", body: JSON.stringify(data) });
+
+export const leaveRankedQueue = () =>
+  request<SessionResponse>("/api/rooms/ranked/queue/leave", { method: "POST" });
