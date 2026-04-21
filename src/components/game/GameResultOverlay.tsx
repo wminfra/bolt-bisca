@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import type { MatchResult } from "@/lib/types";
 import { useGame } from "@/contexts/GameContext";
 import { leaveRoom } from "@/lib/api";
 import { showToast } from "@/components/game/ToastManager";
+import { TrendingUp, TrendingDown, Shield } from "lucide-react";
 
 const REASON_LABELS: Record<string, string> = {
   surrender: "Desistência",
@@ -70,6 +71,15 @@ const reasonText = REASON_LABELS[result.finish_reason ?? "completed"] ?? "Fim de
           ))}
         </div>
 
+        {/* Ranked ELO change */}
+        {session?.room?.ranked && result.elo_changes && session.user?.id && (
+          <EloChangeBlock
+            change={result.elo_changes[session.user.id] ?? 0}
+            newElo={result.updated_elos?.[session.user.id]}
+            shieldUsed={result.rank_shield?.[session.user.id]?.used}
+          />
+        )}
+
         <p className="text-xs text-muted-foreground mb-4">
           Pontuação: Ás=11, 7=10, Rei=4, Cavalo=3, Sota=2
         </p>
@@ -81,6 +91,71 @@ const reasonText = REASON_LABELS[result.finish_reason ?? "completed"] ?? "Fim de
           Voltar ao Lobby
         </button>
       </div>
+    </div>
+  );
+}
+
+function EloChangeBlock({
+  change,
+  newElo,
+  shieldUsed,
+}: {
+  change: number;
+  newElo?: number;
+  shieldUsed?: boolean;
+}) {
+  const [displayElo, setDisplayElo] = useState<number | undefined>(
+    newElo !== undefined ? newElo - change : undefined
+  );
+
+  useEffect(() => {
+    if (newElo === undefined) return;
+    const start = newElo - change;
+    const duration = 1200;
+    const t0 = performance.now();
+    let raf = 0;
+    const step = (now: number) => {
+      const p = Math.min(1, (now - t0) / duration);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setDisplayElo(Math.round(start + change * eased));
+      if (p < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [change, newElo]);
+
+  const positive = change >= 0;
+  const Icon = positive ? TrendingUp : TrendingDown;
+
+  return (
+    <div
+      className={`mb-4 p-3 rounded-md border transition-all ${
+        positive
+          ? "border-primary/40 bg-primary/10"
+          : "border-destructive/40 bg-destructive/10"
+      }`}
+    >
+      <div className="flex items-center justify-center gap-2 mb-1">
+        <Icon size={18} className={positive ? "text-primary" : "text-destructive"} />
+        <span
+          className={`text-2xl font-display font-bold tabular-nums ${
+            positive ? "text-primary" : "text-destructive"
+          }`}
+        >
+          {positive ? "+" : ""}
+          {change} ELO
+        </span>
+      </div>
+      {displayElo !== undefined && (
+        <div className="text-xs text-muted-foreground">
+          Novo ELO: <span className="text-foreground font-semibold tabular-nums">{displayElo}</span>
+        </div>
+      )}
+      {shieldUsed && (
+        <div className="mt-2 flex items-center justify-center gap-1 text-xs text-accent">
+          <Shield size={12} /> Rank Shield consumido
+        </div>
+      )}
     </div>
   );
 }
