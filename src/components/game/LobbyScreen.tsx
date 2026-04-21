@@ -6,6 +6,9 @@ import type { PublicRoom, RoomMode } from "@/lib/types";
 import { PracticeCtx } from "@/contexts/PracticeContext";
 import type { Difficulty } from "@/lib/practice/biscaEngine";
 import ConnectionStatus from "@/components/game/ConnectionStatus";
+import PlayerProfileCard from "@/components/game/PlayerProfileCard";
+import RankedQueueButton from "@/components/game/RankedQueueButton";
+import MatchmakingQueue from "@/components/game/MatchmakingQueue";
 
 export default function LobbyScreen() {
   const { session, updateSession, logout } = useGame();
@@ -82,11 +85,15 @@ export default function LobbyScreen() {
           </div>
         </div>
 
+        {/* Player profile */}
+        <PlayerProfileCard />
+
         {/* Ad placeholder */}
         <div id="ad-top-banner">{/* Google AdSense banner */}</div>
 
         {/* Actions */}
         <div className="flex flex-col gap-3 mb-6">
+          <RankedQueueButton />
           <button
             onClick={() => setShowPracticeModal(true)}
             className="w-full py-2.5 bg-accent text-accent-foreground rounded-md font-display font-semibold hover:opacity-90 transition-opacity"
@@ -178,6 +185,9 @@ export default function LobbyScreen() {
           }}
         />
       )}
+
+      {/* Matchmaking overlay */}
+      {session?.ranked?.in_queue && <MatchmakingQueue />}
     </div>
   );
 }
