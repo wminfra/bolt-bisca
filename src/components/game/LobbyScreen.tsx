@@ -293,7 +293,11 @@ function CreateRoomModal({
       const res = await createRoom({ mode, hand_size: handSize, is_private: isPrivate });
       onCreated(res.session);
     } catch (err: any) {
-      showToast("error", err.message);
+      if (err?.status === 403) {
+        showToast("error", "Energia insuficiente! Aguarde a recarga ou suba de nível.");
+      } else {
+        showToast("error", err.message);
+      }
     } finally {
       setLoading(false);
     }
