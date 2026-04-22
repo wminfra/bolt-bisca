@@ -6,11 +6,22 @@ import { showToast } from "@/components/game/ToastManager";
 import type { RoomMode } from "@/lib/types";
 
 export default function RankedQueueButton() {
-  const { updateSession } = useGame();
+  const { session, updateSession } = useGame();
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<RoomMode>("1v1");
   const [handSize, setHandSize] = useState<3 | 6>(3);
   const [loading, setLoading] = useState(false);
+
+  const energy = session?.user?.energy;
+  const hasEnergy = energy === undefined || energy >= 1;
+
+  const handleOpen = () => {
+    if (!hasEnergy) {
+      showToast("error", "Energia insuficiente! Aguarde a recarga ou suba de nível.");
+      return;
+    }
+    setOpen(true);
+  };
 
   const handleJoin = async () => {
     setLoading(true);
@@ -19,7 +30,11 @@ export default function RankedQueueButton() {
       updateSession(res.session);
       setOpen(false);
     } catch (err: any) {
-      showToast("error", err.message);
+      if (err?.status === 403) {
+        showToast("error", "Energia insuficiente! Aguarde a recarga ou suba de nível.");
+      } else {
+        showToast("error", err.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -28,8 +43,10 @@ export default function RankedQueueButton() {
   return (
     <>
       <button
-        onClick={() => setOpen(true)}
-        className="w-full py-2.5 bg-gradient-to-r from-primary to-accent text-primary-foreground rounded-md font-display font-semibold hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+        onClick={handleOpen}
+        disabled={!hasEnergy}
+        title={!hasEnergy ? "Energia insuficiente" : undefined}
+        className="w-full py-2.5 bg-gradient-to-r from-primary to-accent text-primary-foreground rounded-md font-display font-semibold hover:opacity-90 transition-opacity flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <Swords size={18} />
         Buscar Partida Ranqueada
