@@ -162,3 +162,70 @@ function EloChangeBlock({
     </div>
   );
 }
+
+function RewardsBlock() {
+  const { session } = useGame();
+  const user = session?.user;
+
+  const initialLevelRef = useRef<number | undefined>(user?.level);
+  useEffect(() => {
+    if (initialLevelRef.current === undefined && user?.level !== undefined) {
+      initialLevelRef.current = user.level;
+    }
+  }, [user?.level]);
+
+  const targetPct = user?.xp_progress_percentage;
+  const [animatedPct, setAnimatedPct] = useState<number>(0);
+
+  useEffect(() => {
+    if (targetPct === undefined) return;
+    const duration = 1200;
+    const t0 = performance.now();
+    let raf = 0;
+    const step = (now: number) => {
+      const p = Math.min(1, (now - t0) / duration);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setAnimatedPct(targetPct * eased);
+      if (p < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [targetPct]);
+
+  if (!user || user.level === undefined || targetPct === undefined) return null;
+
+  const initial = initialLevelRef.current;
+  const leveledUp = initial !== undefined && user.level > initial;
+
+  return (
+    <div className="mb-4 p-3 rounded-md border border-accent/40 bg-accent/5">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-display uppercase tracking-wider">
+          <Sparkles size={12} className="text-accent" /> Recompensas
+        </div>
+        <div className="flex items-center gap-1 text-accent">
+          <Star size={14} fill="currentColor" />
+          <span className="font-display font-bold text-sm">Nv {user.level}</span>
+        </div>
+      </div>
+
+      {leveledUp && (
+        <div className="mb-2 text-center text-sm font-display font-bold text-accent animate-pulse">
+          ⭐ LEVEL UP! Nv {initial} → Nv {user.level}
+        </div>
+      )}
+
+      <div className="h-2 w-full rounded-full bg-secondary overflow-hidden">
+        <div
+          className="h-full bg-gradient-to-r from-accent to-primary"
+          style={{ width: `${Math.max(0, Math.min(100, animatedPct))}%` }}
+        />
+      </div>
+      {user.xp !== undefined && user.xp_to_next_level !== undefined && (
+        <div className="mt-1 text-[10px] text-muted-foreground text-right tabular-nums">
+          {user.xp} / {user.xp + user.xp_to_next_level} XP
+        </div>
+      )}
+    </div>
+  );
+}
