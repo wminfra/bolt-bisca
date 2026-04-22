@@ -80,6 +80,9 @@ const reasonText = REASON_LABELS[result.finish_reason ?? "completed"] ?? "Fim de
           />
         )}
 
+        {/* Rewards: XP / Level progression */}
+        <RewardsBlock />
+
         <p className="text-xs text-muted-foreground mb-4">
           Pontuação: Ás=11, 7=10, Rei=4, Cavalo=3, Sota=2
         </p>
