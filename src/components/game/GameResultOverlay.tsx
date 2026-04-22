@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import type { MatchResult } from "@/lib/types";
 import { useGame } from "@/contexts/GameContext";
 import { leaveRoom } from "@/lib/api";
 import { showToast } from "@/components/game/ToastManager";
-import { TrendingUp, TrendingDown, Shield } from "lucide-react";
+import { TrendingUp, TrendingDown, Shield, Star, Sparkles } from "lucide-react";
 
 const REASON_LABELS: Record<string, string> = {
   surrender: "Desistência",
