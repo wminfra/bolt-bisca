@@ -37,7 +37,23 @@ export default function LobbyScreen() {
     if (session?.public_rooms) setRooms(session.public_rooms);
   }, [session?.public_rooms]);
 
+  const energy = session?.user?.energy;
+  const hasEnergy = energy === undefined || energy >= 1;
+
+  const handleNoEnergy = () => {
+    showToast("error", "Energia insuficiente! Aguarde a recarga ou suba de nível.");
+  };
+
+  const handleApiEnergyError = (err: any) => {
+    if (err?.status === 403) {
+      showToast("error", "Energia insuficiente! Aguarde a recarga ou suba de nível.");
+    } else {
+      showToast("error", err.message);
+    }
+  };
+
   const handleJoinById = async () => {
+    if (!hasEnergy) return handleNoEnergy();
     const id = joinId.trim().toUpperCase();
     if (id.length !== 5) return showToast("error", "ID deve ter 5 caracteres");
     setLoading(true);
@@ -45,19 +61,20 @@ export default function LobbyScreen() {
       const res = await joinRoom({ room_id: id });
       updateSession(res.session);
     } catch (err: any) {
-      showToast("error", err.message);
+      handleApiEnergyError(err);
     } finally {
       setLoading(false);
     }
   };
 
   const handleJoinRoom = async (roomId: string) => {
+    if (!hasEnergy) return handleNoEnergy();
     setLoading(true);
     try {
       const res = await joinRoom({ room_id: roomId });
       updateSession(res.session);
     } catch (err: any) {
-      showToast("error", err.message);
+      handleApiEnergyError(err);
     } finally {
       setLoading(false);
     }
@@ -102,8 +119,10 @@ export default function LobbyScreen() {
           </button>
           <div className="flex gap-3">
             <button
-              onClick={() => setShowCreateModal(true)}
-              className="flex-1 py-2.5 bg-primary text-primary-foreground rounded-md font-display font-semibold hover:opacity-90 transition-opacity"
+              onClick={() => (hasEnergy ? setShowCreateModal(true) : handleNoEnergy())}
+              disabled={!hasEnergy}
+              title={!hasEnergy ? "Energia insuficiente" : undefined}
+              className="flex-1 py-2.5 bg-primary text-primary-foreground rounded-md font-display font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Criar Sala
             </button>
@@ -118,8 +137,9 @@ export default function LobbyScreen() {
               />
               <button
                 onClick={handleJoinById}
-                disabled={loading}
-                className="px-4 py-2 bg-secondary text-secondary-foreground rounded-md hover:bg-muted transition-colors disabled:opacity-50"
+                disabled={loading || !hasEnergy}
+                title={!hasEnergy ? "Energia insuficiente" : undefined}
+                className="px-4 py-2 bg-secondary text-secondary-foreground rounded-md hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Entrar
               </button>
@@ -273,7 +293,11 @@ function CreateRoomModal({
       const res = await createRoom({ mode, hand_size: handSize, is_private: isPrivate });
       onCreated(res.session);
     } catch (err: any) {
-      showToast("error", err.message);
+      if (err?.status === 403) {
+        showToast("error", "Energia insuficiente! Aguarde a recarga ou suba de nível.");
+      } else {
+        showToast("error", err.message);
+      }
     } finally {
       setLoading(false);
     }

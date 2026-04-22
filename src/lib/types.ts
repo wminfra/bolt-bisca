@@ -127,6 +127,15 @@ export interface SessionUser {
   games_won?: number;
   penalty_until?: string | null;
   rank_shield_charges?: number;
+  // Progression
+  level?: number;
+  xp?: number;
+  xp_to_next_level?: number;
+  xp_progress_percentage?: number;
+  // Energy
+  energy?: number;
+  max_energy?: number;
+  next_energy_in_seconds?: number;
 }
 
 export interface RankedQueueState {
