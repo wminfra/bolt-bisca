@@ -44,7 +44,9 @@ async function request<T>(
 
   if (!res.ok) {
     const err: ErrorResponse = await res.json().catch(() => ({ detail: "Erro de conexão" }));
-    throw new Error(err.detail);
+    const error = new Error(err.detail) as Error & { status?: number };
+    error.status = res.status;
+    throw error;
   }
 
   return res.json();
