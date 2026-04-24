@@ -158,7 +158,7 @@ export default function GameTableScreen() {
 
             {/* Table cards */}
             <div className="flex gap-2 items-end justify-center min-h-[4.5rem] flex-wrap">
-              {game.table_cards.map((tc, idx) => {
+              {tableCards.map((tc, idx) => {
                 const isWinner = resolving && game.last_trick
                   ? game.last_trick.winning_card.id === tc.card.id
                   : false;
@@ -169,7 +169,7 @@ export default function GameTableScreen() {
                   </div>
                 );
               })}
-              {game.table_cards.length === 0 && (
+              {tableCards.length === 0 && (
                 <div className="w-14 h-20 border border-dashed border-border/30 rounded-lg flex items-center justify-center text-muted-foreground text-[9px]">
                   Mesa vazia
                 </div>
