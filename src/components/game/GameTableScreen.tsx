@@ -1,21 +1,65 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useGame } from "@/contexts/GameContext";
 import { sendWs } from "@/lib/websocket";
 import { surrender } from "@/lib/api";
 import Card, { CardBack } from "@/components/game/Card";
-import type { RoomPlayerSnapshot, GameSnapshot } from "@/lib/types";
+import type { RoomPlayerSnapshot, GameSnapshot, TableCard } from "@/lib/types";
 import GameResultOverlay from "@/components/game/GameResultOverlay";
 import { showToast } from "@/components/game/ToastManager";
 import ConnectionStatus from "@/components/game/ConnectionStatus";
+
+// Minimum visual duration (ms) for showing the resolved trick on the table.
+// The frontend enforces this window even if the backend clears `resolving` earlier.
+const RESOLVE_MS = 2000;
 
 export default function GameTableScreen() {
   const { session, updateSession } = useGame();
   const room = session?.room;
   const game = room?.game;
   const [surrendering, setSurrendering] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
+  const lastTableCardsRef = useRef<TableCard[]>([]);
+
+  // Cache the last non-empty table_cards so we can keep showing them
+  // during the local resolution window even if the backend clears them.
+  if (game && game.table_cards.length > 0) {
+    lastTableCardsRef.current = game.table_cards;
+  }
+
+  // Schedule a re-render at the exact moment the local resolution window expires.
+  const resolvedAt = game?.last_trick ? Date.parse(game.last_trick.resolved_at) : 0;
+  const elapsed = now - resolvedAt;
+  const showingTrick = !!game?.last_trick && resolvedAt > 0 && elapsed < RESOLVE_MS;
+
+  useEffect(() => {
+    if (!showingTrick) return;
+    const remaining = Math.max(0, RESOLVE_MS - elapsed);
+    const id = window.setTimeout(() => setNow(Date.now()), remaining + 16);
+    return () => window.clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resolvedAt, showingTrick]);
+
+  // Reset cached cards when the match ends to avoid stale UI on next match.
+  useEffect(() => {
+    if (room?.status === "finished") {
+      lastTableCardsRef.current = [];
+    }
+  }, [room?.status]);
+
   if (!room || !game) return null;
 
-  const resolving = game.resolving === true;
+  // Combined: backend says resolving OR we're inside the local 2s window.
+  const resolving = game.resolving === true || showingTrick;
+
+  // Cards to render on the table: prefer current backend state; fall back to
+  // the cached snapshot if the backend already cleared while we're still inside
+  // the local visual window.
+  const tableCards =
+    game.table_cards.length > 0
+      ? game.table_cards
+      : showingTrick
+      ? lastTableCardsRef.current
+      : [];
 
   const playCard = (cardId: string) => {
     if (!game.you_can_play || resolving) return;
