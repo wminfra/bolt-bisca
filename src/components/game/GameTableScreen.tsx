@@ -18,7 +18,7 @@ export default function GameTableScreen() {
   const game = room?.game;
   const [surrendering, setSurrendering] = useState(false);
   const [now, setNow] = useState(() => Date.now());
-  const lastTableCardsRef = useRef<TableCard[]>([]);
+  const lastTableCardsRef = useRef<TableCardSnapshot[]>([]);
 
   // Cache the last non-empty table_cards so we can keep showing them
   // during the local resolution window even if the backend clears them.
