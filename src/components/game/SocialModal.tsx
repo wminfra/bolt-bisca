@@ -28,13 +28,11 @@ export default function SocialModal({ onClose }: Props) {
     applyOptimisticBlock,
     markNotificationsSeen,
   } = useSocial();
-  const { session } = useGame();
   const [tab, setTab] = useState<Tab>("friends");
   const [search, setSearch] = useState("");
   const [searching, setSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<SocialSearchResult[] | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [invitedIds, setInvitedIds] = useState<Set<string>>(new Set());
 
   // Mark badge as seen when modal opens
   useEffect(() => {
