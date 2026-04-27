@@ -55,10 +55,6 @@ export default function SocialModal({ onClose }: Props) {
     });
   }, [friends]);
 
-  const room = session?.room;
-  const isOwner = !!room?.viewer_is_creator;
-  const roomFull = !!room && room.players.length >= room.capacity;
-  const canInvite = isOwner && !roomFull && room?.status === "waiting";
 
   const handleSearch = async () => {
     const q = search.trim();
@@ -109,31 +105,6 @@ export default function SocialModal({ onClose }: Props) {
   const handleUnblock = (userId: string) =>
     wrap(userId, () => unblockUser(userId), "Usuário desbloqueado");
 
-  const handleInvite = async (userId: string) => {
-    if (!canInvite) return;
-    setBusyId(userId);
-    try {
-      await inviteFriendToRoom(userId);
-      showToast("success", "Convite enviado!");
-      setInvitedIds((s) => {
-        const next = new Set(s);
-        next.add(userId);
-        return next;
-      });
-      // 15s cooldown
-      setTimeout(() => {
-        setInvitedIds((s) => {
-          const next = new Set(s);
-          next.delete(userId);
-          return next;
-        });
-      }, 15000);
-    } catch (err: any) {
-      showToast("error", err.message || "Falha ao convidar");
-    } finally {
-      setBusyId(null);
-    }
-  };
 
   const incomingCount = pendingIncoming.length;
 
