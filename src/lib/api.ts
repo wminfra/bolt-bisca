@@ -10,6 +10,9 @@ import type {
   SessionResponse,
   PublicRoom,
   ErrorResponse,
+  FriendsListResponse,
+  SocialSearchResponse,
+  SocialActionResponse,
 } from "./types";
 
 function getToken(): string | null {
@@ -91,3 +94,41 @@ export const joinRankedQueue = (data: { mode: "1v1" | "2v2"; hand_size: 3 | 6 })
 
 export const leaveRankedQueue = () =>
   request<SessionResponse>("/api/rooms/ranked/queue/leave", { method: "POST" });
+
+// ===== Social =====
+export const searchUsers = (nickname: string) =>
+  request<SocialSearchResponse>(`/api/social/search?nickname=${encodeURIComponent(nickname)}`);
+
+export const getFriends = () =>
+  request<FriendsListResponse>("/api/social/friends");
+
+export const sendFriendRequest = (userId: string) =>
+  request<SocialActionResponse>(`/api/social/request/${userId}`, {
+    method: "POST",
+    body: JSON.stringify({}),
+  });
+
+export const respondFriendRequest = (userId: string, accept: boolean) =>
+  request<SocialActionResponse>(`/api/social/respond/${userId}`, {
+    method: "POST",
+    body: JSON.stringify({ accept }),
+  });
+
+export const blockUser = (userId: string) =>
+  request<SocialActionResponse>(`/api/social/block/${userId}`, {
+    method: "POST",
+    body: JSON.stringify({}),
+  });
+
+export const unblockUser = (userId: string) =>
+  request<SocialActionResponse>(`/api/social/unblock/${userId}`, {
+    method: "POST",
+    body: JSON.stringify({}),
+  });
+
+// ===== Room invite =====
+export const inviteFriendToRoom = (friendId: string) =>
+  request<{ status?: string }>(`/api/rooms/invite/${friendId}`, {
+    method: "POST",
+    body: JSON.stringify({}),
+  });

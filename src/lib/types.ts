@@ -203,4 +203,64 @@ export interface WsErrorMessage {
   message: string;
 }
 
-export type WsServerMessage = WsSessionStateMessage | WsErrorMessage;
+// ===== Social =====
+export type FriendStatus = "pending" | "accepted" | "blocked" | "declined";
+
+export interface FriendEntry {
+  user_id: string;
+  nickname: string;
+  status: FriendStatus;
+  created_at?: string;
+  updated_at?: string;
+  is_online?: boolean;
+}
+
+export interface FriendsListResponse {
+  friends: FriendEntry[];
+  blocks: FriendEntry[];
+  pending_incoming: FriendEntry[];
+  pending_outgoing: FriendEntry[];
+}
+
+export interface SocialSearchResult {
+  user_id: string;
+  nickname: string;
+  current_status: FriendStatus | null;
+}
+
+export interface SocialSearchResponse {
+  results: SocialSearchResult[];
+}
+
+export interface SocialActionResponse {
+  status: FriendStatus | "declined";
+  auto_accepted?: boolean;
+}
+
+// ===== WS social events =====
+export interface WsFriendPresenceMessage {
+  type: "friend_presence";
+  payload: { user_id: string; online?: boolean; is_online?: boolean };
+}
+
+export interface WsFriendRequestReceivedMessage {
+  type: "friend_request_received";
+  payload: { from_user_id: string; from_nickname: string };
+}
+
+export interface WsRoomInviteMessage {
+  type: "room_invite";
+  payload: {
+    room_id: string;
+    from_nickname: string;
+    mode?: RoomMode | string;
+    expires_in?: number;
+  };
+}
+
+export type WsServerMessage =
+  | WsSessionStateMessage
+  | WsErrorMessage
+  | WsFriendPresenceMessage
+  | WsFriendRequestReceivedMessage
+  | WsRoomInviteMessage;
