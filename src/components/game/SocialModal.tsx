@@ -320,7 +320,7 @@ function SearchResultRow({
           </span>
         )}
         {status === "accepted" && (
-          <span className="px-3 py-1 text-xs rounded bg-green-500/20 text-green-400">
+          <span className="px-3 py-1 text-xs rounded bg-primary/20 text-primary">
             Amigo
           </span>
         )}
