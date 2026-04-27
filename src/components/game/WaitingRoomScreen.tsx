@@ -164,6 +164,7 @@ export default function WaitingRoomScreen() {
           )}
         </div>
       </div>
+      {inviteOpen && <InviteFriendsModal onClose={() => setInviteOpen(false)} />}
     </div>
   );
 }
