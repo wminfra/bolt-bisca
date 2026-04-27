@@ -7,7 +7,6 @@ import {
   respondFriendRequest,
   blockUser,
   unblockUser,
-  inviteFriendToRoom,
 } from "@/lib/api";
 import { showToast } from "@/components/game/ToastManager";
 import type { FriendEntry, SocialSearchResult } from "@/lib/types";
