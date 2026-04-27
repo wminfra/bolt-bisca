@@ -1,13 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useSocial } from "@/contexts/SocialContext";
-import { useGame } from "@/contexts/GameContext";
+
 import {
   searchUsers,
   sendFriendRequest,
   respondFriendRequest,
   blockUser,
   unblockUser,
-  inviteFriendToRoom,
 } from "@/lib/api";
 import { showToast } from "@/components/game/ToastManager";
 import type { FriendEntry, SocialSearchResult } from "@/lib/types";
@@ -29,13 +28,11 @@ export default function SocialModal({ onClose }: Props) {
     applyOptimisticBlock,
     markNotificationsSeen,
   } = useSocial();
-  const { session } = useGame();
   const [tab, setTab] = useState<Tab>("friends");
   const [search, setSearch] = useState("");
   const [searching, setSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<SocialSearchResult[] | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [invitedIds, setInvitedIds] = useState<Set<string>>(new Set());
 
   // Mark badge as seen when modal opens
   useEffect(() => {
@@ -58,10 +55,6 @@ export default function SocialModal({ onClose }: Props) {
     });
   }, [friends]);
 
-  const room = session?.room;
-  const isOwner = !!room?.viewer_is_creator;
-  const roomFull = !!room && room.players.length >= room.capacity;
-  const canInvite = isOwner && !roomFull && room?.status === "waiting";
 
   const handleSearch = async () => {
     const q = search.trim();
@@ -112,31 +105,6 @@ export default function SocialModal({ onClose }: Props) {
   const handleUnblock = (userId: string) =>
     wrap(userId, () => unblockUser(userId), "Usuário desbloqueado");
 
-  const handleInvite = async (userId: string) => {
-    if (!canInvite) return;
-    setBusyId(userId);
-    try {
-      await inviteFriendToRoom(userId);
-      showToast("success", "Convite enviado!");
-      setInvitedIds((s) => {
-        const next = new Set(s);
-        next.add(userId);
-        return next;
-      });
-      // 15s cooldown
-      setTimeout(() => {
-        setInvitedIds((s) => {
-          const next = new Set(s);
-          next.delete(userId);
-          return next;
-        });
-      }, 15000);
-    } catch (err: any) {
-      showToast("error", err.message || "Falha ao convidar");
-    } finally {
-      setBusyId(null);
-    }
-  };
 
   const incomingCount = pendingIncoming.length;
 
@@ -238,9 +206,6 @@ export default function SocialModal({ onClose }: Props) {
             <FriendsTab
               friends={sortedFriends}
               busyId={busyId}
-              canInvite={canInvite}
-              invitedIds={invitedIds}
-              onInvite={handleInvite}
               onBlock={handleBlock}
             />
           ) : tab === "requests" ? (
@@ -267,8 +232,10 @@ export default function SocialModal({ onClose }: Props) {
 function StatusDot({ online }: { online?: boolean }) {
   return (
     <span
-      className={`inline-block w-2 h-2 rounded-full ${
-        online ? "bg-primary shadow-[0_0_6px_hsl(var(--primary))]" : "bg-muted-foreground/40"
+      className={`inline-block w-2.5 h-2.5 rounded-full ${
+        online
+          ? "bg-green-500 shadow-[0_0_6px_rgb(34_197_94_/_0.8)]"
+          : "bg-muted-foreground/40"
       }`}
       aria-label={online ? "Online" : "Offline"}
     />
@@ -349,16 +316,10 @@ function SearchResultRow({
 function FriendsTab({
   friends,
   busyId,
-  canInvite,
-  invitedIds,
-  onInvite,
   onBlock,
 }: {
   friends: FriendEntry[];
   busyId: string | null;
-  canInvite: boolean;
-  invitedIds: Set<string>;
-  onInvite: (id: string) => void;
   onBlock: (id: string) => void;
 }) {
   if (friends.length === 0) {
@@ -370,43 +331,21 @@ function FriendsTab({
   }
   return (
     <div className="space-y-2">
-      {friends.map((f) => {
-        const invited = invitedIds.has(f.user_id);
-        const inviteDisabled = !canInvite || !f.is_online || invited || busyId === f.user_id;
-        return (
-          <Row key={f.user_id}>
-            <div className="flex items-center gap-2 min-w-0">
-              <StatusDot online={f.is_online} />
-              <span className="text-sm text-foreground truncate">{f.nickname}</span>
-            </div>
-            <div className="flex gap-1.5">
-              <button
-                onClick={() => onInvite(f.user_id)}
-                disabled={inviteDisabled}
-                title={
-                  !canInvite
-                    ? "Crie ou entre em uma sala para convidar"
-                    : !f.is_online
-                    ? "Amigo offline"
-                    : invited
-                    ? "Convidado!"
-                    : undefined
-                }
-                className="px-3 py-1 text-xs rounded bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
-              >
-                {invited ? "Convidado!" : "Convidar"}
-              </button>
-              <button
-                onClick={() => onBlock(f.user_id)}
-                disabled={busyId === f.user_id}
-                className="px-2 py-1 text-xs rounded bg-secondary text-secondary-foreground hover:bg-muted disabled:opacity-50 transition-colors"
-              >
-                Bloquear
-              </button>
-            </div>
-          </Row>
-        );
-      })}
+      {friends.map((f) => (
+        <Row key={f.user_id}>
+          <div className="flex items-center gap-2 min-w-0">
+            <StatusDot online={f.is_online} />
+            <span className="text-sm text-foreground truncate">{f.nickname}</span>
+          </div>
+          <button
+            onClick={() => onBlock(f.user_id)}
+            disabled={busyId === f.user_id}
+            className="px-2 py-1 text-xs rounded bg-secondary text-secondary-foreground hover:bg-muted disabled:opacity-50 transition-colors"
+          >
+            Bloquear
+          </button>
+        </Row>
+      ))}
     </div>
   );
 }

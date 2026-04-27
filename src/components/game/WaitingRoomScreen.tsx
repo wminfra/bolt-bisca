@@ -3,10 +3,12 @@ import { useGame } from "@/contexts/GameContext";
 import { leaveRoom, selectPartner, startGame } from "@/lib/api";
 import { showToast } from "@/components/game/ToastManager";
 import ConnectionStatus from "@/components/game/ConnectionStatus";
+import InviteFriendsModal from "@/components/game/InviteFriendsModal";
 
 export default function WaitingRoomScreen() {
   const { session, updateSession } = useGame();
   const [loading, setLoading] = useState(false);
+  const [inviteOpen, setInviteOpen] = useState(false);
   const room = session?.room;
   if (!room) return null;
 
@@ -127,6 +129,16 @@ export default function WaitingRoomScreen() {
             ))}
           </div>
 
+          {/* Invite friends */}
+          {room.viewer_is_creator && room.status === "waiting" && room.players.length < room.capacity && (
+            <button
+              onClick={() => setInviteOpen(true)}
+              className="w-full mb-3 py-2 rounded-md bg-secondary text-secondary-foreground border border-border hover:bg-muted transition-colors text-sm font-semibold flex items-center justify-center gap-2"
+            >
+              👥 Convidar Amigos
+            </button>
+          )}
+
           {/* Actions */}
           <div className="flex gap-2">
             <button
@@ -152,6 +164,7 @@ export default function WaitingRoomScreen() {
           )}
         </div>
       </div>
+      {inviteOpen && <InviteFriendsModal onClose={() => setInviteOpen(false)} />}
     </div>
   );
 }
