@@ -232,8 +232,10 @@ export default function SocialModal({ onClose }: Props) {
 function StatusDot({ online }: { online?: boolean }) {
   return (
     <span
-      className={`inline-block w-2 h-2 rounded-full ${
-        online ? "bg-primary shadow-[0_0_6px_hsl(var(--primary))]" : "bg-muted-foreground/40"
+      className={`inline-block w-2.5 h-2.5 rounded-full ${
+        online
+          ? "bg-green-500 shadow-[0_0_6px_rgb(34_197_94_/_0.8)]"
+          : "bg-muted-foreground/40"
       }`}
       aria-label={online ? "Online" : "Offline"}
     />
@@ -314,16 +316,10 @@ function SearchResultRow({
 function FriendsTab({
   friends,
   busyId,
-  canInvite,
-  invitedIds,
-  onInvite,
   onBlock,
 }: {
   friends: FriendEntry[];
   busyId: string | null;
-  canInvite: boolean;
-  invitedIds: Set<string>;
-  onInvite: (id: string) => void;
   onBlock: (id: string) => void;
 }) {
   if (friends.length === 0) {
@@ -335,43 +331,21 @@ function FriendsTab({
   }
   return (
     <div className="space-y-2">
-      {friends.map((f) => {
-        const invited = invitedIds.has(f.user_id);
-        const inviteDisabled = !canInvite || !f.is_online || invited || busyId === f.user_id;
-        return (
-          <Row key={f.user_id}>
-            <div className="flex items-center gap-2 min-w-0">
-              <StatusDot online={f.is_online} />
-              <span className="text-sm text-foreground truncate">{f.nickname}</span>
-            </div>
-            <div className="flex gap-1.5">
-              <button
-                onClick={() => onInvite(f.user_id)}
-                disabled={inviteDisabled}
-                title={
-                  !canInvite
-                    ? "Crie ou entre em uma sala para convidar"
-                    : !f.is_online
-                    ? "Amigo offline"
-                    : invited
-                    ? "Convidado!"
-                    : undefined
-                }
-                className="px-3 py-1 text-xs rounded bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
-              >
-                {invited ? "Convidado!" : "Convidar"}
-              </button>
-              <button
-                onClick={() => onBlock(f.user_id)}
-                disabled={busyId === f.user_id}
-                className="px-2 py-1 text-xs rounded bg-secondary text-secondary-foreground hover:bg-muted disabled:opacity-50 transition-colors"
-              >
-                Bloquear
-              </button>
-            </div>
-          </Row>
-        );
-      })}
+      {friends.map((f) => (
+        <Row key={f.user_id}>
+          <div className="flex items-center gap-2 min-w-0">
+            <StatusDot online={f.is_online} />
+            <span className="text-sm text-foreground truncate">{f.nickname}</span>
+          </div>
+          <button
+            onClick={() => onBlock(f.user_id)}
+            disabled={busyId === f.user_id}
+            className="px-2 py-1 text-xs rounded bg-secondary text-secondary-foreground hover:bg-muted disabled:opacity-50 transition-colors"
+          >
+            Bloquear
+          </button>
+        </Row>
+      ))}
     </div>
   );
 }
