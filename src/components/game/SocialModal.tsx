@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useSocial } from "@/contexts/SocialContext";
-import { useGame } from "@/contexts/GameContext";
+
 import {
   searchUsers,
   sendFriendRequest,
@@ -206,9 +206,6 @@ export default function SocialModal({ onClose }: Props) {
             <FriendsTab
               friends={sortedFriends}
               busyId={busyId}
-              canInvite={canInvite}
-              invitedIds={invitedIds}
-              onInvite={handleInvite}
               onBlock={handleBlock}
             />
           ) : tab === "requests" ? (
