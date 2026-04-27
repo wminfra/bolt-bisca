@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext } from "react";
 import { useGame } from "@/contexts/GameContext";
+import { useSocial } from "@/contexts/SocialContext";
 import { getPublicRooms, createRoom, joinRoom } from "@/lib/api";
 import { showToast } from "@/components/game/ToastManager";
 import type { PublicRoom, RoomMode } from "@/lib/types";
@@ -9,13 +10,16 @@ import ConnectionStatus from "@/components/game/ConnectionStatus";
 import PlayerProfileCard from "@/components/game/PlayerProfileCard";
 import RankedQueueButton from "@/components/game/RankedQueueButton";
 import MatchmakingQueue from "@/components/game/MatchmakingQueue";
+import SocialModal from "@/components/game/SocialModal";
 
 export default function LobbyScreen() {
   const { session, updateSession, logout } = useGame();
+  const { hasNotification } = useSocial();
   const practice = useContext(PracticeCtx);
   const [rooms, setRooms] = useState<PublicRoom[]>(session?.public_rooms || []);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showPracticeModal, setShowPracticeModal] = useState(false);
+  const [showSocialModal, setShowSocialModal] = useState(false);
   const [joinId, setJoinId] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -93,6 +97,32 @@ export default function LobbyScreen() {
           </div>
           <div className="flex items-center gap-3">
             <ConnectionStatus />
+            <button
+              onClick={() => setShowSocialModal(true)}
+              className="relative p-2 rounded-md text-foreground hover:text-primary hover:bg-secondary transition-colors"
+              aria-label="Social"
+              title="Amigos & convites"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+              {hasNotification && (
+                <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-destructive ring-2 ring-card" />
+              )}
+            </button>
             <button
               onClick={logout}
               className="text-sm text-muted-foreground hover:text-accent transition-colors"
@@ -208,6 +238,9 @@ export default function LobbyScreen() {
 
       {/* Matchmaking overlay */}
       {session?.ranked?.in_queue && <MatchmakingQueue />}
+
+      {/* Social Modal */}
+      {showSocialModal && <SocialModal onClose={() => setShowSocialModal(false)} />}
     </div>
   );
 }
