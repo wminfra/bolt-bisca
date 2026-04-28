@@ -257,7 +257,7 @@ export default function GameTableScreen() {
       </div>
 
       {/* Result overlay */}
-      {game.result && <GameResultOverlay result={game.result} />}
+      {view.result && <GameResultOverlay result={view.result} />}
     </div>
   );
 }
