@@ -3,7 +3,7 @@ import { useGame } from "@/contexts/GameContext";
 import { sendWs } from "@/lib/websocket";
 import { surrender } from "@/lib/api";
 import Card, { CardBack } from "@/components/game/Card";
-import type { RoomPlayerSnapshot, GameSnapshot, TableCardSnapshot } from "@/lib/types";
+import type { RoomPlayerSnapshot, GameSnapshot } from "@/lib/types";
 import GameResultOverlay from "@/components/game/GameResultOverlay";
 import { showToast } from "@/components/game/ToastManager";
 import ConnectionStatus from "@/components/game/ConnectionStatus";
