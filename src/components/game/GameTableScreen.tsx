@@ -171,7 +171,7 @@ export default function GameTableScreen() {
         {/* Top opponent */}
         {topOpp && (
           <div className="flex-none flex flex-col items-center py-1">
-            <OpponentLabel player={topOpp.player} isTurn={topOpp.player.id === game.turn_player_id} />
+            <OpponentLabel player={topOpp.player} isTurn={topOpp.player.id === view.turn_player_id} />
             <div className="flex gap-0.5 mt-0.5">
               {Array.from({ length: topOpp.player.hand_count }).map((_, i) => (
                 <CardBack key={i} size="xs" />
