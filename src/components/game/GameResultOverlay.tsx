@@ -43,7 +43,7 @@ const reasonText = REASON_LABELS[result.finish_reason ?? "completed"] ?? "Fim de
 
         {/* Winner label */}
         <p className="text-lg text-foreground font-display mb-1">
-          {result.winner_team_label || result.winner_label}
+          {result.winner_team_label || result.winner_label} Venceu!
         </p>
 
         {/* Finish reason badge */}
