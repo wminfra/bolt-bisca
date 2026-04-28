@@ -106,7 +106,7 @@ export default function GameTableScreen() {
   const tableCards = view.table_cards;
 
   const playCard = (cardId: string) => {
-    if (!game.you_can_play || resolving) return;
+    if (!view.you_can_play || resolving) return;
     sendWs({ type: "play_card", payload: { card_id: cardId } });
   };
 
@@ -127,7 +127,7 @@ export default function GameTableScreen() {
     }
   };
 
-  const { seating_order, viewer_seat } = game;
+  const { seating_order, viewer_seat } = view;
   const totalPlayers = seating_order.length;
   const opponents = getOpponentSlots(room.players, seating_order, viewer_seat, totalPlayers);
 
