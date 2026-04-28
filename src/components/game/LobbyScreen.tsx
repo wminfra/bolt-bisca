@@ -101,8 +101,37 @@ export default function LobbyScreen() {
               Olá, <span className="text-foreground font-medium">{session?.user.nickname}</span>
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <ConnectionStatus />
+            {/* Coin balance + open store */}
+            <div className="flex items-center gap-1 pl-2 pr-1 py-1 rounded-full bg-secondary border border-border">
+              <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-gradient-to-br from-amber-300 to-amber-600 text-[9px] font-black text-amber-900 shadow-sm">
+                $
+              </span>
+              <span className="font-mono text-amber-300 font-bold text-sm tabular-nums min-w-[2ch] text-center">
+                {economy?.coins ?? 0}
+              </span>
+              <button
+                onClick={() => setShowStoreModal(true)}
+                className="ml-1 w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center hover:opacity-90 transition-opacity"
+                aria-label="Abrir loja"
+                title="Abrir loja"
+              >
+                +
+              </button>
+            </div>
+            {/* Daily bonus */}
+            <button
+              onClick={() => setShowDailyModal(true)}
+              className="relative p-2 rounded-md text-foreground hover:text-primary hover:bg-secondary transition-colors"
+              aria-label="Bônus diário"
+              title="Bônus diário"
+            >
+              <span className="text-base">🎁</span>
+              {canClaimDaily && (
+                <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-card animate-pulse" />
+              )}
+            </button>
             <button
               onClick={() => setShowSocialModal(true)}
               className="relative p-2 rounded-md text-foreground hover:text-primary hover:bg-secondary transition-colors"
@@ -247,6 +276,12 @@ export default function LobbyScreen() {
 
       {/* Social Modal */}
       {showSocialModal && <SocialModal onClose={() => setShowSocialModal(false)} />}
+
+      {/* Store Modal */}
+      {showStoreModal && <StoreModal onClose={() => setShowStoreModal(false)} />}
+
+      {/* Daily Bonus Modal */}
+      {showDailyModal && <DailyBonusModal onClose={() => setShowDailyModal(false)} />}
     </div>
   );
 }
