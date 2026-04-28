@@ -11,15 +11,21 @@ import PlayerProfileCard from "@/components/game/PlayerProfileCard";
 import RankedQueueButton from "@/components/game/RankedQueueButton";
 import MatchmakingQueue from "@/components/game/MatchmakingQueue";
 import SocialModal from "@/components/game/SocialModal";
+import StoreModal from "@/components/game/StoreModal";
+import DailyBonusModal from "@/components/game/DailyBonusModal";
+import { useEconomy } from "@/contexts/EconomyContext";
 
 export default function LobbyScreen() {
   const { session, updateSession, logout } = useGame();
   const { hasNotification } = useSocial();
+  const { economy, canClaimDaily } = useEconomy();
   const practice = useContext(PracticeCtx);
   const [rooms, setRooms] = useState<PublicRoom[]>(session?.public_rooms || []);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showPracticeModal, setShowPracticeModal] = useState(false);
   const [showSocialModal, setShowSocialModal] = useState(false);
+  const [showStoreModal, setShowStoreModal] = useState(false);
+  const [showDailyModal, setShowDailyModal] = useState(false);
   const [joinId, setJoinId] = useState("");
   const [loading, setLoading] = useState(false);
 
