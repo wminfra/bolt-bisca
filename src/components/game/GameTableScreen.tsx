@@ -220,9 +220,9 @@ export default function GameTableScreen() {
               )}
             </div>
 
-            {game.last_trick && !resolving && (
+            {view.last_trick && !resolving && (
               <p className="text-[10px] text-muted-foreground">
-                Última vaza: <span className="text-foreground">{game.last_trick.winner_nickname}</span> ganhou
+                Última vaza: <span className="text-foreground">{view.last_trick.winner_nickname}</span> ganhou
               </p>
             )}
           </div>
