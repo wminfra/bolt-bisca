@@ -203,8 +203,8 @@ export default function GameTableScreen() {
             {/* Table cards */}
             <div className="flex gap-2 items-end justify-center min-h-[4.5rem] flex-wrap">
               {tableCards.map((tc, idx) => {
-                const isWinner = resolving && game.last_trick
-                  ? game.last_trick.winning_card.id === tc.card.id
+                const isWinner = resolving && view.last_trick
+                  ? view.last_trick.winning_card.id === tc.card.id
                   : false;
                 return (
                   <div key={tc.player_id} className="flex flex-col items-center gap-0.5" style={{ zIndex: idx + 1 }}>
