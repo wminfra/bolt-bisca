@@ -163,7 +163,7 @@ export default function GameTableScreen() {
 
       {/* Score bar */}
       <div className="flex-none">
-        <ScoreBoard game={game} players={room.players} />
+        <ScoreBoard game={view} players={room.players} />
       </div>
 
       {/* Main game area */}
