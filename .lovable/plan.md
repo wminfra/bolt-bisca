@@ -1,54 +1,28 @@
-# Sincronização da resolução da vaza (modo online)
+# Sincronização da resolução da vaza (modo online) — Jitter Buffer
 
-## Objetivo
+## Contexto do backend
 
-Garantir que a janela de visualização das cartas jogadas após cada vaza dure **sempre 2 segundos no frontend**, mesmo que o backend envie `resolving: false` antes disso. O timer local passa a ser a fonte de verdade para a duração da animação; o backend apenas dispara o início via `last_trick.resolved_at`.
+O backend já controla o tempo de resolução: envia `resolving:true` com a mesa cheia, dorme 2s, e envia `resolving:false` com a mesa limpa. O frontend NÃO deve adicionar 2s extras — só atua como jitter buffer caso os dois snapshots cheguem quase juntos por instabilidade da rede.
 
 ## Comportamento garantido
 
-| Cenário backend | Comportamento UI |
+| Cenário | Comportamento UI |
 |---|---|
-| Demora 3s para mandar `resolving:false` | UI bloqueada por 3s (segue o backend, sem corte) |
-| Manda `resolving:false` em 200ms | **UI mantém as cartas visíveis até completar 2s locais** ✅ |
-| Inicia próxima vaza | Novo `resolved_at` reinicia o ciclo de 2s |
+| Backend perfeito (2s entre pacotes) | UI segue exatamente o backend, sem espera extra |
+| Pacotes colapsam (resolving:false chega <2s após resolving:true) | Snapshot final é bufferizado e aplicado quando o cronômetro local de 2s expira |
+| `resolving:false` chega ≥2s depois | Aplicação imediata |
 
-## Arquivo afetado
+## Implementação (`GameTableScreen.tsx`)
 
-Apenas `src/components/game/GameTableScreen.tsx`. Sem alterações em `websocket.ts`, `GameContext.tsx` ou `types.ts`.
+- `displayedGame` (state local): snapshot atualmente renderizado.
+- `pendingGameRef`: snapshot bufferizado durante a janela.
+- `resolveEndsAtRef`: timestamp do fim da janela local (0 = inativa).
+- `flushTimerRef`: `setTimeout` que aplica o snapshot pendente quando a janela termina.
 
-## Mudanças
+Transições no `useEffect([game])`:
+1. `resolving:true` (novo) → aplica imediatamente, abre janela de 2s, agenda flush.
+2. `resolving:true` (continuação) → aplica.
+3. `resolving:false` durante janela ativa → bufferiza.
+4. `resolving:false` sem janela → aplica imediatamente (flush + set).
 
-1. **Constante configurável** no topo do arquivo:
-   ```ts
-   const RESOLVE_MS = 2000;
-   ```
-
-2. **Estado local derivado** combinando backend + janela local:
-   ```ts
-   const resolvedAt = game.last_trick ? Date.parse(game.last_trick.resolved_at) : 0;
-   const [now, setNow] = useState(Date.now());
-   const elapsed = now - resolvedAt;
-   const showingTrick = !!game.last_trick && elapsed < RESOLVE_MS;
-   const resolving = game.resolving || showingTrick;
-   ```
-
-3. **Re-render no momento exato** que a janela local expira:
-   ```ts
-   useEffect(() => {
-     if (!showingTrick) return;
-     const remaining = RESOLVE_MS - elapsed;
-     const id = setTimeout(() => setNow(Date.now()), remaining);
-     return () => clearTimeout(id);
-   }, [resolvedAt, showingTrick]);
-   ```
-
-4. **Cache das cartas exibidas** via `useRef`, como salvaguarda caso o backend limpe `table_cards` junto com `resolving:false`. Durante `showingTrick`, renderiza o último `table_cards` não-vazio em vez do array atual.
-
-5. **`playCard` e overlay de vencedor** continuam usando o `resolving` local combinado, garantindo que:
-   - O jogador não consiga jogar durante a janela visual.
-   - O destaque `isWinner` na carta vencedora permaneça por 2s.
-
-## Fora do escopo
-
-- Modo Praticar (`PracticeGameScreen.tsx`) — já controla o delay localmente, não tem o problema.
-- Lógica de WebSocket, contexto, tipos, animações de outros componentes.
+Toda a UI (turno, mão, mesa, score, overlay) lê de `view = displayedGame ?? game`, garantindo consistência entre carta vencedora destacada, bloqueio de jogada e clear da mesa.

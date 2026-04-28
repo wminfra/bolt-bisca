@@ -3,13 +3,15 @@ import { useGame } from "@/contexts/GameContext";
 import { sendWs } from "@/lib/websocket";
 import { surrender } from "@/lib/api";
 import Card, { CardBack } from "@/components/game/Card";
-import type { RoomPlayerSnapshot, GameSnapshot, TableCardSnapshot } from "@/lib/types";
+import type { RoomPlayerSnapshot, GameSnapshot } from "@/lib/types";
 import GameResultOverlay from "@/components/game/GameResultOverlay";
 import { showToast } from "@/components/game/ToastManager";
 import ConnectionStatus from "@/components/game/ConnectionStatus";
 
 // Minimum visual duration (ms) for showing the resolved trick on the table.
-// The frontend enforces this window even if the backend clears `resolving` earlier.
+// Acts only as a JITTER BUFFER: the backend already enforces a 2s pause server-side.
+// If the "trick cleared" snapshot arrives before this window ends (network jitter
+// collapsed the two snapshots), we delay applying it until the window completes.
 const RESOLVE_MS = 2000;
 
 export default function GameTableScreen() {
@@ -17,52 +19,94 @@ export default function GameTableScreen() {
   const room = session?.room;
   const game = room?.game;
   const [surrendering, setSurrendering] = useState(false);
-  const [now, setNow] = useState(() => Date.now());
-  const lastTableCardsRef = useRef<TableCardSnapshot[]>([]);
 
-  // Cache the last non-empty table_cards so we can keep showing them
-  // during the local resolution window even if the backend clears them.
-  if (game && game.table_cards.length > 0) {
-    lastTableCardsRef.current = game.table_cards;
-  }
+  // Locally displayed game snapshot. Lags behind `game` only while the jitter
+  // buffer is open (i.e. backend sent resolving:true and we're still within
+  // the minimum visual window).
+  const [displayedGame, setDisplayedGame] = useState<GameSnapshot | null>(game ?? null);
 
-  // Schedule a re-render at the exact moment the local resolution window expires.
-  const resolvedAt = game?.last_trick ? Date.parse(game.last_trick.resolved_at) : 0;
-  const elapsed = now - resolvedAt;
-  const showingTrick = !!game?.last_trick && resolvedAt > 0 && elapsed < RESOLVE_MS;
+  // Pending snapshot held back during the jitter buffer window.
+  const pendingGameRef = useRef<GameSnapshot | null>(null);
+  // Timestamp (ms) when the local resolve window will end. 0 = no window active.
+  const resolveEndsAtRef = useRef<number>(0);
+  const flushTimerRef = useRef<number | null>(null);
 
-  useEffect(() => {
-    if (!showingTrick) return;
-    const remaining = Math.max(0, RESOLVE_MS - elapsed);
-    const id = window.setTimeout(() => setNow(Date.now()), remaining + 16);
-    return () => window.clearTimeout(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [resolvedAt, showingTrick]);
-
-  // Reset cached cards when the match ends to avoid stale UI on next match.
-  useEffect(() => {
-    if (room?.status === "finished") {
-      lastTableCardsRef.current = [];
+  const flushPending = () => {
+    if (flushTimerRef.current !== null) {
+      window.clearTimeout(flushTimerRef.current);
+      flushTimerRef.current = null;
     }
-  }, [room?.status]);
+    resolveEndsAtRef.current = 0;
+    if (pendingGameRef.current) {
+      setDisplayedGame(pendingGameRef.current);
+      pendingGameRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    if (!game) {
+      setDisplayedGame(null);
+      pendingGameRef.current = null;
+      resolveEndsAtRef.current = 0;
+      if (flushTimerRef.current !== null) {
+        window.clearTimeout(flushTimerRef.current);
+        flushTimerRef.current = null;
+      }
+      return;
+    }
+
+    const now = Date.now();
+    const windowActive = resolveEndsAtRef.current > now;
+    const wasResolving = displayedGame?.resolving === true;
+    const isResolving = game.resolving === true;
+
+    // Case A: backend just opened a new resolve window (resolving:true).
+    // Apply immediately so the winning-card highlight + full table show up,
+    // and start (or extend) the local jitter window.
+    if (isResolving && !wasResolving) {
+      pendingGameRef.current = null;
+      setDisplayedGame(game);
+      resolveEndsAtRef.current = now + RESOLVE_MS;
+      if (flushTimerRef.current !== null) window.clearTimeout(flushTimerRef.current);
+      flushTimerRef.current = window.setTimeout(flushPending, RESOLVE_MS);
+      return;
+    }
+
+    // Case B: still resolving (subsequent updates with resolving:true) — apply.
+    if (isResolving) {
+      setDisplayedGame(game);
+      return;
+    }
+
+    // Case C: backend cleared resolving but our local jitter window is still
+    // open — buffer the snapshot, apply it when the window expires.
+    if (!isResolving && windowActive) {
+      pendingGameRef.current = game;
+      return;
+    }
+
+    // Case D: no window active — apply immediately.
+    flushPending();
+    setDisplayedGame(game);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [game]);
+
+  useEffect(() => {
+    return () => {
+      if (flushTimerRef.current !== null) window.clearTimeout(flushTimerRef.current);
+    };
+  }, []);
 
   if (!room || !game) return null;
 
-  // Combined: backend says resolving OR we're inside the local 2s window.
-  const resolving = game.resolving === true || showingTrick;
-
-  // Cards to render on the table: prefer current backend state; fall back to
-  // the cached snapshot if the backend already cleared while we're still inside
-  // the local visual window.
-  const tableCards =
-    game.table_cards.length > 0
-      ? game.table_cards
-      : showingTrick
-      ? lastTableCardsRef.current
-      : [];
+  // Render from the locally-buffered snapshot. Falls back to live `game` only
+  // on the very first render before the effect runs.
+  const view = displayedGame ?? game;
+  const resolving = view.resolving === true;
+  const tableCards = view.table_cards;
 
   const playCard = (cardId: string) => {
-    if (!game.you_can_play || resolving) return;
+    if (!view.you_can_play || resolving) return;
     sendWs({ type: "play_card", payload: { card_id: cardId } });
   };
 
@@ -83,7 +127,7 @@ export default function GameTableScreen() {
     }
   };
 
-  const { seating_order, viewer_seat } = game;
+  const { seating_order, viewer_seat } = view;
   const totalPlayers = seating_order.length;
   const opponents = getOpponentSlots(room.players, seating_order, viewer_seat, totalPlayers);
 
@@ -98,12 +142,12 @@ export default function GameTableScreen() {
         <div>
           <span className="text-muted-foreground">Sala </span>
           <span className="font-mono text-primary">{room.id}</span>
-          <span className="text-muted-foreground ml-2">Vaza #{game.trick_number}</span>
+          <span className="text-muted-foreground ml-2">Vaza #{view.trick_number}</span>
         </div>
         <div className="flex items-center gap-2">
           <ConnectionStatus />
           <span className="text-muted-foreground">
-            Vez: <span className="text-foreground font-medium">{game.turn_nickname}</span>
+            Vez: <span className="text-foreground font-medium">{view.turn_nickname}</span>
           </span>
           {room.status === "playing" && (
             <button
@@ -119,7 +163,7 @@ export default function GameTableScreen() {
 
       {/* Score bar */}
       <div className="flex-none">
-        <ScoreBoard game={game} players={room.players} />
+        <ScoreBoard game={view} players={room.players} />
       </div>
 
       {/* Main game area */}
@@ -127,7 +171,7 @@ export default function GameTableScreen() {
         {/* Top opponent */}
         {topOpp && (
           <div className="flex-none flex flex-col items-center py-1">
-            <OpponentLabel player={topOpp.player} isTurn={topOpp.player.id === game.turn_player_id} />
+            <OpponentLabel player={topOpp.player} isTurn={topOpp.player.id === view.turn_player_id} />
             <div className="flex gap-0.5 mt-0.5">
               {Array.from({ length: topOpp.player.hand_count }).map((_, i) => (
                 <CardBack key={i} size="xs" />
@@ -137,14 +181,14 @@ export default function GameTableScreen() {
         )}
 
         {/* Trump + Stock — centered above table */}
-        <TrumpStock game={game} />
+        <TrumpStock game={view} />
 
         {/* Middle section: sides + center */}
         <div className="flex-1 flex min-h-0">
           {/* Left opponent */}
           {leftOpp ? (
             <div className="flex-none w-12 flex flex-col items-center justify-center gap-0.5 px-0.5">
-              <OpponentLabel player={leftOpp.player} isTurn={leftOpp.player.id === game.turn_player_id} vertical />
+              <OpponentLabel player={leftOpp.player} isTurn={leftOpp.player.id === view.turn_player_id} vertical />
               <div className="flex flex-col gap-0.5">
                 {Array.from({ length: leftOpp.player.hand_count }).map((_, i) => (
                   <CardBack key={i} size="xs" />
@@ -159,8 +203,8 @@ export default function GameTableScreen() {
             {/* Table cards */}
             <div className="flex gap-2 items-end justify-center min-h-[4.5rem] flex-wrap">
               {tableCards.map((tc, idx) => {
-                const isWinner = resolving && game.last_trick
-                  ? game.last_trick.winning_card.id === tc.card.id
+                const isWinner = resolving && view.last_trick
+                  ? view.last_trick.winning_card.id === tc.card.id
                   : false;
                 return (
                   <div key={tc.player_id} className="flex flex-col items-center gap-0.5" style={{ zIndex: idx + 1 }}>
@@ -176,9 +220,9 @@ export default function GameTableScreen() {
               )}
             </div>
 
-            {game.last_trick && !resolving && (
+            {view.last_trick && !resolving && (
               <p className="text-[10px] text-muted-foreground">
-                Última vaza: <span className="text-foreground">{game.last_trick.winner_nickname}</span> ganhou
+                Última vaza: <span className="text-foreground">{view.last_trick.winner_nickname}</span> ganhou
               </p>
             )}
           </div>
@@ -186,7 +230,7 @@ export default function GameTableScreen() {
           {/* Right opponent */}
           {rightOpp ? (
             <div className="flex-none w-12 flex flex-col items-center justify-center gap-0.5 px-0.5">
-              <OpponentLabel player={rightOpp.player} isTurn={rightOpp.player.id === game.turn_player_id} vertical />
+              <OpponentLabel player={rightOpp.player} isTurn={rightOpp.player.id === view.turn_player_id} vertical />
               <div className="flex flex-col gap-0.5">
                 {Array.from({ length: rightOpp.player.hand_count }).map((_, i) => (
                   <CardBack key={i} size="xs" />
@@ -200,12 +244,12 @@ export default function GameTableScreen() {
       {/* Player hand — 3x2 grid */}
       <div className="flex-none border-t border-border/30 bg-card/40 px-2 py-2">
         <div className="grid grid-cols-3 gap-1.5 w-fit mx-auto">
-          {game.your_hand.map((card) => (
+          {view.your_hand.map((card) => (
             <Card
               key={card.id}
               card={card}
               size="hand"
-              playable={game.you_can_play && !resolving}
+              playable={view.you_can_play && !resolving}
               onClick={() => playCard(card.id)}
             />
           ))}
@@ -213,7 +257,7 @@ export default function GameTableScreen() {
       </div>
 
       {/* Result overlay */}
-      {game.result && <GameResultOverlay result={game.result} />}
+      {view.result && <GameResultOverlay result={view.result} />}
     </div>
   );
 }
