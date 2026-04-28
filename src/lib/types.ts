@@ -264,3 +264,55 @@ export type WsServerMessage =
   | WsFriendPresenceMessage
   | WsFriendRequestReceivedMessage
   | WsRoomInviteMessage;
+
+// ===== Store / Daily Bonus =====
+export interface UserEconomyState {
+  coins: number;
+  consecutive_logins: number;
+  last_login_date: string | null;
+  double_xp_until: string | null;
+  rank_shield_charges: number;
+  energy: number;
+  energy_frozen_until: string | null;
+}
+
+export interface ClaimDailyResponse {
+  earned_coins: number;
+  user_state: UserEconomyState;
+}
+
+export type StoreItemId =
+  | "elo_shield"
+  | "double_xp_1h"
+  | "energy_refill"
+  | "energy_freeze"
+  | string;
+
+export interface StoreItem {
+  id: StoreItemId;
+  name: string;
+  price: number;
+  can_buy: boolean;
+  reason: string | null;
+}
+
+export interface StoreItemsResponse {
+  items: StoreItem[];
+  coins: number;
+  rank_shield_charges: number;
+}
+
+export interface PurchaseResult {
+  item_id: StoreItemId;
+  price: number;
+  coins_left: number;
+  rank_shield_charges: number;
+  double_xp_until: string | null;
+  energy: number;
+  energy_frozen_until: string | null;
+}
+
+export interface BuyItemResponse {
+  purchase: PurchaseResult;
+  user_state: UserEconomyState;
+}

@@ -13,6 +13,10 @@ import type {
   FriendsListResponse,
   SocialSearchResponse,
   SocialActionResponse,
+  ClaimDailyResponse,
+  StoreItemsResponse,
+  BuyItemResponse,
+  StoreItemId,
 } from "./types";
 
 function getToken(): string | null {
@@ -129,6 +133,22 @@ export const unblockUser = (userId: string) =>
 // ===== Room invite =====
 export const inviteFriendToRoom = (friendId: string) =>
   request<{ status?: string }>(`/api/rooms/invite/${friendId}`, {
+    method: "POST",
+    body: JSON.stringify({}),
+  });
+
+// ===== Store / Daily Bonus =====
+export const claimDailyBonus = () =>
+  request<ClaimDailyResponse>("/api/store/claim-daily", {
+    method: "POST",
+    body: JSON.stringify({}),
+  });
+
+export const getStoreItems = () =>
+  request<StoreItemsResponse>("/api/store/items");
+
+export const buyStoreItem = (itemId: StoreItemId) =>
+  request<BuyItemResponse>(`/api/store/buy/${itemId}`, {
     method: "POST",
     body: JSON.stringify({}),
   });
