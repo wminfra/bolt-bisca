@@ -147,7 +147,7 @@ export default function GameTableScreen() {
         <div className="flex items-center gap-2">
           <ConnectionStatus />
           <span className="text-muted-foreground">
-            Vez: <span className="text-foreground font-medium">{game.turn_nickname}</span>
+            Vez: <span className="text-foreground font-medium">{view.turn_nickname}</span>
           </span>
           {room.status === "playing" && (
             <button
