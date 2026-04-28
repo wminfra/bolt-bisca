@@ -244,12 +244,12 @@ export default function GameTableScreen() {
       {/* Player hand — 3x2 grid */}
       <div className="flex-none border-t border-border/30 bg-card/40 px-2 py-2">
         <div className="grid grid-cols-3 gap-1.5 w-fit mx-auto">
-          {game.your_hand.map((card) => (
+          {view.your_hand.map((card) => (
             <Card
               key={card.id}
               card={card}
               size="hand"
-              playable={game.you_can_play && !resolving}
+              playable={view.you_can_play && !resolving}
               onClick={() => playCard(card.id)}
             />
           ))}
