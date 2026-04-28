@@ -13,6 +13,10 @@ import type {
   FriendsListResponse,
   SocialSearchResponse,
   SocialActionResponse,
+  ClaimDailyResponse,
+  StoreItemsResponse,
+  BuyItemResponse,
+  StoreItemId,
 } from "./types";
 
 function getToken(): string | null {
