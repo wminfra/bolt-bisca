@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { GameProvider, useGame } from "@/contexts/GameContext";
 import { SocialProvider } from "@/contexts/SocialContext";
+import { EconomyProvider } from "@/contexts/EconomyContext";
 import LoginScreen from "@/components/game/LoginScreen";
 import LobbyScreen from "@/components/game/LobbyScreen";
 import WaitingRoomScreen from "@/components/game/WaitingRoomScreen";
@@ -48,13 +49,15 @@ export default function BiscaGame() {
 
   return (
     <GameProvider>
-      <SocialProvider>
-        <PracticeCtx.Provider value={ctx}>
-          <ScreenRouter />
-          <ToastManager />
-          <RoomInvitePopup />
-        </PracticeCtx.Provider>
-      </SocialProvider>
+      <EconomyProvider>
+        <SocialProvider>
+          <PracticeCtx.Provider value={ctx}>
+            <ScreenRouter />
+            <ToastManager />
+            <RoomInvitePopup />
+          </PracticeCtx.Provider>
+        </SocialProvider>
+      </EconomyProvider>
     </GameProvider>
   );
 }
