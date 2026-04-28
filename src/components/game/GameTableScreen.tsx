@@ -181,7 +181,7 @@ export default function GameTableScreen() {
         )}
 
         {/* Trump + Stock — centered above table */}
-        <TrumpStock game={game} />
+        <TrumpStock game={view} />
 
         {/* Middle section: sides + center */}
         <div className="flex-1 flex min-h-0">
