@@ -230,7 +230,7 @@ export default function GameTableScreen() {
           {/* Right opponent */}
           {rightOpp ? (
             <div className="flex-none w-12 flex flex-col items-center justify-center gap-0.5 px-0.5">
-              <OpponentLabel player={rightOpp.player} isTurn={rightOpp.player.id === game.turn_player_id} vertical />
+              <OpponentLabel player={rightOpp.player} isTurn={rightOpp.player.id === view.turn_player_id} vertical />
               <div className="flex flex-col gap-0.5">
                 {Array.from({ length: rightOpp.player.hand_count }).map((_, i) => (
                   <CardBack key={i} size="xs" />
