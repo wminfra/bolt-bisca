@@ -188,7 +188,7 @@ export default function GameTableScreen() {
           {/* Left opponent */}
           {leftOpp ? (
             <div className="flex-none w-12 flex flex-col items-center justify-center gap-0.5 px-0.5">
-              <OpponentLabel player={leftOpp.player} isTurn={leftOpp.player.id === game.turn_player_id} vertical />
+              <OpponentLabel player={leftOpp.player} isTurn={leftOpp.player.id === view.turn_player_id} vertical />
               <div className="flex flex-col gap-0.5">
                 {Array.from({ length: leftOpp.player.hand_count }).map((_, i) => (
                   <CardBack key={i} size="xs" />
