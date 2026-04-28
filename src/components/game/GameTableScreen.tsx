@@ -142,7 +142,7 @@ export default function GameTableScreen() {
         <div>
           <span className="text-muted-foreground">Sala </span>
           <span className="font-mono text-primary">{room.id}</span>
-          <span className="text-muted-foreground ml-2">Vaza #{game.trick_number}</span>
+          <span className="text-muted-foreground ml-2">Vaza #{view.trick_number}</span>
         </div>
         <div className="flex items-center gap-2">
           <ConnectionStatus />
