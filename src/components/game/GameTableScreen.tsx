@@ -9,7 +9,9 @@ import { showToast } from "@/components/game/ToastManager";
 import ConnectionStatus from "@/components/game/ConnectionStatus";
 
 // Minimum visual duration (ms) for showing the resolved trick on the table.
-// The frontend enforces this window even if the backend clears `resolving` earlier.
+// Acts only as a JITTER BUFFER: the backend already enforces a 2s pause server-side.
+// If the "trick cleared" snapshot arrives before this window ends (network jitter
+// collapsed the two snapshots), we delay applying it until the window completes.
 const RESOLVE_MS = 2000;
 
 export default function GameTableScreen() {
@@ -17,49 +19,91 @@ export default function GameTableScreen() {
   const room = session?.room;
   const game = room?.game;
   const [surrendering, setSurrendering] = useState(false);
-  const [now, setNow] = useState(() => Date.now());
-  const lastTableCardsRef = useRef<TableCardSnapshot[]>([]);
 
-  // Cache the last non-empty table_cards so we can keep showing them
-  // during the local resolution window even if the backend clears them.
-  if (game && game.table_cards.length > 0) {
-    lastTableCardsRef.current = game.table_cards;
-  }
+  // Locally displayed game snapshot. Lags behind `game` only while the jitter
+  // buffer is open (i.e. backend sent resolving:true and we're still within
+  // the minimum visual window).
+  const [displayedGame, setDisplayedGame] = useState<GameSnapshot | null>(game ?? null);
 
-  // Schedule a re-render at the exact moment the local resolution window expires.
-  const resolvedAt = game?.last_trick ? Date.parse(game.last_trick.resolved_at) : 0;
-  const elapsed = now - resolvedAt;
-  const showingTrick = !!game?.last_trick && resolvedAt > 0 && elapsed < RESOLVE_MS;
+  // Pending snapshot held back during the jitter buffer window.
+  const pendingGameRef = useRef<GameSnapshot | null>(null);
+  // Timestamp (ms) when the local resolve window will end. 0 = no window active.
+  const resolveEndsAtRef = useRef<number>(0);
+  const flushTimerRef = useRef<number | null>(null);
 
-  useEffect(() => {
-    if (!showingTrick) return;
-    const remaining = Math.max(0, RESOLVE_MS - elapsed);
-    const id = window.setTimeout(() => setNow(Date.now()), remaining + 16);
-    return () => window.clearTimeout(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [resolvedAt, showingTrick]);
-
-  // Reset cached cards when the match ends to avoid stale UI on next match.
-  useEffect(() => {
-    if (room?.status === "finished") {
-      lastTableCardsRef.current = [];
+  const flushPending = () => {
+    if (flushTimerRef.current !== null) {
+      window.clearTimeout(flushTimerRef.current);
+      flushTimerRef.current = null;
     }
-  }, [room?.status]);
+    resolveEndsAtRef.current = 0;
+    if (pendingGameRef.current) {
+      setDisplayedGame(pendingGameRef.current);
+      pendingGameRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    if (!game) {
+      setDisplayedGame(null);
+      pendingGameRef.current = null;
+      resolveEndsAtRef.current = 0;
+      if (flushTimerRef.current !== null) {
+        window.clearTimeout(flushTimerRef.current);
+        flushTimerRef.current = null;
+      }
+      return;
+    }
+
+    const now = Date.now();
+    const windowActive = resolveEndsAtRef.current > now;
+    const wasResolving = displayedGame?.resolving === true;
+    const isResolving = game.resolving === true;
+
+    // Case A: backend just opened a new resolve window (resolving:true).
+    // Apply immediately so the winning-card highlight + full table show up,
+    // and start (or extend) the local jitter window.
+    if (isResolving && !wasResolving) {
+      pendingGameRef.current = null;
+      setDisplayedGame(game);
+      resolveEndsAtRef.current = now + RESOLVE_MS;
+      if (flushTimerRef.current !== null) window.clearTimeout(flushTimerRef.current);
+      flushTimerRef.current = window.setTimeout(flushPending, RESOLVE_MS);
+      return;
+    }
+
+    // Case B: still resolving (subsequent updates with resolving:true) — apply.
+    if (isResolving) {
+      setDisplayedGame(game);
+      return;
+    }
+
+    // Case C: backend cleared resolving but our local jitter window is still
+    // open — buffer the snapshot, apply it when the window expires.
+    if (!isResolving && windowActive) {
+      pendingGameRef.current = game;
+      return;
+    }
+
+    // Case D: no window active — apply immediately.
+    flushPending();
+    setDisplayedGame(game);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [game]);
+
+  useEffect(() => {
+    return () => {
+      if (flushTimerRef.current !== null) window.clearTimeout(flushTimerRef.current);
+    };
+  }, []);
 
   if (!room || !game) return null;
 
-  // Combined: backend says resolving OR we're inside the local 2s window.
-  const resolving = game.resolving === true || showingTrick;
-
-  // Cards to render on the table: prefer current backend state; fall back to
-  // the cached snapshot if the backend already cleared while we're still inside
-  // the local visual window.
-  const tableCards =
-    game.table_cards.length > 0
-      ? game.table_cards
-      : showingTrick
-      ? lastTableCardsRef.current
-      : [];
+  // Render from the locally-buffered snapshot. Falls back to live `game` only
+  // on the very first render before the effect runs.
+  const view = displayedGame ?? game;
+  const resolving = view.resolving === true;
+  const tableCards = view.table_cards;
 
   const playCard = (cardId: string) => {
     if (!game.you_can_play || resolving) return;
